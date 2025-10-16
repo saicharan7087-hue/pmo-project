@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Employee, User
+from .models import Employee
 
 class EmployeeSerializer(serializers.ModelSerializer):
     main_account = serializers.CharField(source='main_account.name', read_only=True)
@@ -27,3 +27,10 @@ class EmployeeSerializer(serializers.ModelSerializer):
 class LoginSerializer(serializers.Serializer):
     username = serializers.CharField()
     password = serializers.CharField()
+
+
+
+class EmployeeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Employee
+        fields = ['name', 'email', 'phone', 'date_of_joining']
