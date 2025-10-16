@@ -30,7 +30,4 @@ class LoginSerializer(serializers.Serializer):
 
 
 
-class EmployeeSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Employee
-        fields = ['name', 'email', 'phone', 'date_of_joining']
+
