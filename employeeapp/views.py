@@ -1,7 +1,7 @@
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from .models import Employee, User
+from .models import Employee
 from .serializers import  LoginSerializer,  EmployeeSerializer
 from django.shortcuts import get_object_or_404
 
