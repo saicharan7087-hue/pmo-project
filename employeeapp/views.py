@@ -2,8 +2,10 @@ from django.views.decorators.csrf import csrf_exempt
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from .models import Employee
-from .serializers import  LoginSerializer,  EmployeeSerializer
+from django.contrib.auth.models import User
+from .serializers import    EmployeeSerializer
 from django.shortcuts import get_object_or_404
+from django.contrib.auth import authenticate
 
 
 @api_view(['GET'])
@@ -16,18 +18,14 @@ def employee_list_api(request):
 @csrf_exempt  # <-- important for disabling CSRF (since you're using Postman)
 @api_view(['POST'])  # <-- tells Django REST Framework to expect POST requests
 def login_view(request):
-    serializer = LoginSerializer(data=request.data)
-    if serializer.is_valid():
-        username = serializer.validated_data['username']
-        password = serializer.validated_data['password']
+    username = request.data.get('username')
+    password = request.data.get('password')
 
-        try:
-            user = User.objects.get(username=username, password=password)
-            return Response({"message": "Login successful"})
-        except User.DoesNotExist:
-            return Response({"message": "Invalid credentials"}, status=400)
-
-    return Response(serializer.errors, status=400)
+    user = authenticate(username=username, password=password)
+    if user is not None:
+        return Response({"message": "Login successful"})
+    else:
+        return Response({"message": "Invalid credentials"}, status=400)
 
 
 @api_view(['GET'])
