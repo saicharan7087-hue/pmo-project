@@ -2,7 +2,7 @@ from django.views.decorators.csrf import csrf_exempt
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from .models import Employee
-from django.contrib.auth.models import User
+
 from .serializers import    EmployeeSerializer
 from django.shortcuts import get_object_or_404
 from django.contrib.auth import authenticate
@@ -30,7 +30,9 @@ def login_view(request):
 
 @api_view(['GET'])
 def get_employee_by_name(request, name):
-    # Retrieve employee by name (case-insensitive)
-    employee = get_object_or_404(Employee, name__iexact=name)
-    serializer = EmployeeSerializer(employee)
-    return Response(serializer.data)
+    try:
+        employee = Employee.objects.get(full_name=name)
+        serializer = EmployeeSerializer(employee)
+        return Response(serializer.data)
+    except Employee.DoesNotExist:
+        return Response({'error': 'Employee not found'}, status=404)
