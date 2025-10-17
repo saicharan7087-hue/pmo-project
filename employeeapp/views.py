@@ -1,6 +1,10 @@
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
+from rest_framework import status
+import json
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
 from .models import Employee
 
 from .serializers import    EmployeeSerializer
@@ -29,10 +33,29 @@ def login_view(request):
 
 
 @api_view(['GET'])
-def get_employee_by_name(request, name):
+def get_employee_by_id(request, employee_id):
+    try:
+        employee = Employee.objects.get(id=employee_id)
+    except Employee.DoesNotExist:
+        return Response({"error": "Employee not found"}, status=status.HTTP_404_NOT_FOUND)
+
+    serializer = EmployeeSerializer(employee)
+    return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+@api_view(['PUT'])
+def update_employee(request, name):
     try:
         employee = Employee.objects.get(full_name=name)
-        serializer = EmployeeSerializer(employee)
-        return Response(serializer.data)
     except Employee.DoesNotExist:
-        return Response({'error': 'Employee not found'}, status=404)
+        return Response({'error': 'Employee not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    serializer = EmployeeSerializer(employee, data=request.data, partial=True)
+    if serializer.is_valid():
+        serializer.save()
+        return Response({
+            'message': 'Employee details updated successfully',
+            'employee': serializer.data
+        }, status=status.HTTP_200_OK)
+    else:
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
