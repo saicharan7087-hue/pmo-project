@@ -32,6 +32,10 @@ class EmployeeSerializer(serializers.ModelSerializer):
         instance.date_of_joining = validated_data.get('date_of_joining', instance.date_of_joining)
         instance.is_active = validated_data.get('is_active', instance.is_active)
         instance.client_account_manager= validated_data.get('client_account_manager', instance.client_account_manager)
+        instance.main_account = validated_data.get('main_account', instance.main_account)
+        instance.end_client = validated_data.get('end_client', instance.end_client)
+        instance.client_account_manager_email= validated_data.get('client_account_manager_email', instance.client_account_manager_email)
+        instance.pass_type = validated_data.get('pass_type', instance. pass_type)
 
         instance.save()
         return instance

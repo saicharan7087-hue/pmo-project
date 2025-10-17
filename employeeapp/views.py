@@ -44,9 +44,9 @@ def get_employee_by_id(request, employee_id):
 
 
 @api_view(['PUT'])
-def update_employee(request, name):
+def update_employee(request, employee_id):
     try:
-        employee = Employee.objects.get(full_name=name)
+        employee = Employee.objects.get(id=employee_id)
     except Employee.DoesNotExist:
         return Response({'error': 'Employee not found'}, status=status.HTTP_404_NOT_FOUND)
 
