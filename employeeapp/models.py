@@ -52,3 +52,7 @@ class MainAccount(models.Model):
 class EndClientDetails(models.Model):
     name = models.CharField(max_length=255)
     is_active = models.BooleanField(default=True)
+
+class PassType(models.Model):
+    name=models.CharField(max_length=255)
+    is_active=models.BooleanField(default=True)
