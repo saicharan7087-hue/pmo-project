@@ -2,6 +2,7 @@ from django.views.decorators.csrf import csrf_exempt
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework.views import APIView
 import json
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
@@ -79,3 +80,13 @@ def get_end_clients(request):
 def pass_type(request):
     ptype= PassType.objects.filter(is_active=True).values('id','name').order_by('name')
     return Response(list(ptype))
+
+
+
+class AddEmployeeAPIView(APIView):
+    def post(self, request):
+        serializer = EmployeeSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({"message": "Employee added successfully", "data": serializer.data}, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

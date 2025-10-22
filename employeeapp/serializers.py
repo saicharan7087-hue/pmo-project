@@ -45,5 +45,11 @@ class LoginSerializer(serializers.Serializer):
     password = serializers.CharField()
 
 
+class AddEmployeeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Employee
+        fields = '__all__'
+
+
 
 
