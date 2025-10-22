@@ -5,7 +5,7 @@ from rest_framework import status
 import json
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from .models import Employee
+from .models import Employee,MainAccount
 
 from .serializers import    EmployeeSerializer
 from django.shortcuts import get_object_or_404
@@ -59,3 +59,10 @@ def update_employee(request, employee_id):
         }, status=status.HTTP_200_OK)
     else:
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+@api_view(['GET'])
+def get_main_accounts(request):
+    """
+    Returns only main account IDs and names.
+    """
+    accounts = MainAccount.objects.filter(is_active=True).values('id', 'name').order_by('name')
+    return Response(list(accounts))

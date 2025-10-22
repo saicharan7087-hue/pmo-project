@@ -42,3 +42,8 @@ class Employee(models.Model):
 
         def __str__(self):
             return self.username
+
+
+class MainAccount(models.Model):
+    name = models.CharField(max_length=255)
+    is_active = models.BooleanField(default=True)
