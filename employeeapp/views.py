@@ -5,7 +5,7 @@ from rest_framework import status
 import json
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from .models import Employee,MainAccount
+from .models import Employee,MainAccount,EndClientDetails
 
 from .serializers import    EmployeeSerializer
 from django.shortcuts import get_object_or_404
@@ -66,3 +66,11 @@ def get_main_accounts(request):
     """
     accounts = MainAccount.objects.filter(is_active=True).values('id', 'name').order_by('name')
     return Response(list(accounts))
+
+@api_view(['GET'])
+def get_end_clients(request):
+    """
+    Returns only end client names (list of strings)
+    """
+    clients = EndClientDetails.objects.filter(is_active=True).order_by('name').values_list('name', flat=True)
+    return Response(list(clients))

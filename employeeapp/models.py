@@ -47,3 +47,8 @@ class Employee(models.Model):
 class MainAccount(models.Model):
     name = models.CharField(max_length=255)
     is_active = models.BooleanField(default=True)
+
+
+class EndClientDetails(models.Model):
+    name = models.CharField(max_length=255)
+    is_active = models.BooleanField(default=True)
