@@ -120,18 +120,27 @@ STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+import os
+from configparser import ConfigParser
+
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+config = ConfigParser()
+config_file = os.path.join(BASE_DIR, 'db_config.ini')
+config.read(config_file)
 
 DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.mysql",
-        "NAME": "em",
-        "USER": "root",
-        "PASSWORD": "Sai@12b5",
-        "HOST": "127.0.0.1",
-        "PORT": "3306",
+    'default': {
+        'ENGINE': config.get('database', 'ENGINE', fallback='django.db.backends.mysql'),
+        'NAME': config.get('database', 'NAME', fallback='pra'),
+        'USER': config.get('database', 'USER', fallback='root'),
+        'PASSWORD': config.get('database', 'PASSWORD', fallback=''),
+        'HOST': config.get('database', 'HOST', fallback='127.0.0.1'),
+        'PORT': config.get('database', 'PORT', fallback='3306'),
     }
 }
 
+# MySQL setup
 import pymysql
 pymysql.install_as_MySQLdb()
 
