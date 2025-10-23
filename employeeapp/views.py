@@ -11,11 +11,12 @@ from .models import Employee,PassType,EndClient,MainClient
 from .serializers import    EmployeeSerializer
 from django.shortcuts import get_object_or_404
 from django.contrib.auth import authenticate
+from .serializers import EmployeeSerializer
 
 
 @api_view(['GET'])
 def employee_list_api(request):
-    employees = Employee.objects.all()
+    employees = Employee.objects.select_related('main_account', 'end_client').all()
     serializer = EmployeeSerializer(employees, many=True)
     return Response(serializer.data)
 
@@ -94,3 +95,65 @@ class AddEmployeeAPIView(APIView):
             serializer.save()
             return Response({"message": "Employee added successfully", "data": serializer.data}, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+
+
+
+import pandas as pd
+from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.decorators import api_view, parser_classes
+from rest_framework.response import Response
+from rest_framework import status
+from .models import Employee, MainClient, EndClient, MigrantType
+from .serializers import EmployeeSerializer
+
+@api_view(['POST'])
+@parser_classes([MultiPartParser, FormParser])
+def upload_employee_excel(request):
+    """
+    Upload an Excel file and insert employee data into the database.
+    """
+    try:
+        excel_file = request.FILES.get('file')
+        if not excel_file:
+            return Response({'error': 'No file uploaded.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Read Excel file
+        df = pd.read_excel(excel_file)
+
+        # Expected columns in Excel file
+        required_columns = ['full_name', 'email', 'phone', 'main_account', 'end_client', 'pass_type', 'date_of_joining','client_account_manager','client_account_manager_email']
+        for col in required_columns:
+            if col not in df.columns:
+                return Response({'error': f'Missing required column: {col}'}, status=status.HTTP_400_BAD_REQUEST)
+
+        inserted_records = []
+
+        # Iterate over rows and save employees
+        for _, row in df.iterrows():
+            main_client = MainClient.objects.filter(name=row['main_account']).first()
+            end_client = EndClient.objects.filter(name=row['end_client']).first()
+            pass_type = MigrantType.objects.filter(migrant_name=row['pass_type']).first()
+
+            employee = Employee.objects.create(
+                full_name=row['full_name'],
+                email=row['email'],
+                phone=row['phone'],
+                main_account=main_client,
+                end_client=end_client,
+                client_account_manager=client_account_manager,
+                client_account_manager_email=client_account_manager_email,
+                pass_type=pass_type,
+                date_of_joining=row['date_of_joining']
+            )
+            inserted_records.append(employee.id)
+
+        return Response({
+            "message": "Employee data uploaded successfully",
+            "inserted_ids": inserted_records,
+            "count": len(inserted_records)
+        }, status=status.HTTP_201_CREATED)
+
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
