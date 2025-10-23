@@ -6,7 +6,7 @@ from rest_framework.views import APIView
 import json
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from .models import Employee,MainAccount,EndClientDetails,PassType
+from .models import Employee,PassType,EndClient,MainClient
 
 from .serializers import    EmployeeSerializer
 from django.shortcuts import get_object_or_404
@@ -65,17 +65,24 @@ def get_main_accounts(request):
     """
     Returns only main account IDs and names.
     """
-    accounts = MainAccount.objects.filter(is_active=True).values('id', 'name').order_by('name')
+    accounts = MainClient.objects.filter(is_active=True).values('id', 'name').order_by('name')
     return Response(list(accounts))
 
 @api_view(['GET'])
-def get_end_clients(request):
+def get_end_clients(request, main_client_id=None):
     """
-    Returns only end client names (list of strings)
+    Returns only end clients linked to a selected main client.
+    Example: /api/endclients/1/ will return end clients for main client ID=1
     """
-    clients = EndClientDetails.objects.filter(is_active=True).values('id','name').order_by('name')
-    return Response(list(clients))
+    if main_client_id:
+        clients = EndClient.objects.filter(
+            is_active=True,
+            main_client_id=main_client_id
+        ).values('id', 'name').order_by('name')
+    else:
+        clients = EndClient.objects.filter(is_active=True).values('id', 'name').order_by('name')
 
+    return Response(list(clients))
 @api_view(['GET'])
 def pass_type(request):
     ptype= PassType.objects.filter(is_active=True).values('id','name').order_by('name')

@@ -2,6 +2,7 @@ from django.db import models
 
 class MainClient(models.Model):
     name = models.CharField(max_length=100)
+    is_active = models.BooleanField(default=True)
 
     def __str__(self):
         return self.name
@@ -10,6 +11,7 @@ class MainClient(models.Model):
 class EndClient(models.Model):
     name = models.CharField(max_length=100)
     main_client = models.ForeignKey(MainClient, on_delete=models.CASCADE, related_name='end_clients')
+    is_active = models.BooleanField(default=True)
 
     def __str__(self):
         return self.name
@@ -44,14 +46,9 @@ class Employee(models.Model):
             return self.username
 
 
-class MainAccount(models.Model):
-    name = models.CharField(max_length=255)
-    is_active = models.BooleanField(default=True)
 
 
-class EndClientDetails(models.Model):
-    name = models.CharField(max_length=255)
-    is_active = models.BooleanField(default=True)
+
 
 class PassType(models.Model):
     name=models.CharField(max_length=225)
