@@ -131,12 +131,12 @@ config.read(config_file)
 
 DATABASES = {
     'default': {
-        'ENGINE': config.get('database', 'ENGINE', fallback='django.db.backends.mysql'),
+        'ENGINE': config.get('database', 'ENGINE', fallback=''),
         'NAME': config.get('database', 'NAME', fallback=''),
         'USER': config.get('database', 'USER', fallback=''),
         'PASSWORD': config.get('database', 'PASSWORD', fallback=''),
-        'HOST': config.get('database', 'HOST', fallback='127.0.0.1'),
-        'PORT': config.get('database', 'PORT', fallback='3306'),
+        'HOST': config.get('database', 'HOST', fallback=''),
+        'PORT': config.get('database', 'PORT', fallback=''),
     }
 }
 
