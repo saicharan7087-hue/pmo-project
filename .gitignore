@@ -1,0 +1,48 @@
+# ========================
+# Python / Django Project
+# ========================
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Configuration files
+*.ini
+*.env
+.env/
+venv/
+.venv/
+env/
+ENV/
+*.log
+
+# Django / Python
+db.sqlite3
+media/
+staticfiles/
+local_settings.py
+
+# IDE / Editor files
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# Build / distribution directories
+build/
+dist/
+*.egg-info/
+
+# Pytest / Coverage / Cache
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Temporary files
+*.tmp
+*.bak
