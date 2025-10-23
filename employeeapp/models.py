@@ -39,18 +39,10 @@ class Employee(models.Model):
     def __str__(self):
         return self.full_name
 
-    class User(models.Model):
-        username = models.CharField(max_length=50, unique=True)
-        password = models.CharField(max_length=128)
-
-        def __str__(self):
-            return self.username
-
-
-
-
-
 
 class PassType(models.Model):
-    name=models.CharField(max_length=225)
-    is_active=models.BooleanField(default=True)
+    name = models.CharField(max_length=225)
+    is_active = models.BooleanField(default=True)
+
+    def __str__(self):
+        return self.name
