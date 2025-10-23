@@ -16,6 +16,7 @@ class EndClient(models.Model):
     def __str__(self):
         return self.name
 
+
 class MigrantType(models.Model):
     migrant_name = models.CharField(max_length=50)
 
