@@ -71,14 +71,15 @@ def get_main_accounts(request):
 @api_view(['GET'])
 def get_end_clients(request, main_client_id=None):
     """
-    Returns only end clients linked to a selected main client.
-    Example: /api/endclients/1/ will return end clients for main client ID=1
+    Returns end clients linked to a selected main client.
+    If a main_client_id is given, return only first 3 active end clients for that main client.
+    Example: /api/endclients/1/ will return top 3 end clients for main client ID=1
     """
     if main_client_id:
         clients = EndClient.objects.filter(
             is_active=True,
             main_client_id=main_client_id
-        ).values('id', 'name').order_by('name')
+        ).values('id', 'name').order_by('name')[:3]  # LIMIT 3
     else:
         clients = EndClient.objects.filter(is_active=True).values('id', 'name').order_by('name')
 

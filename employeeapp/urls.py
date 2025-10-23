@@ -6,9 +6,9 @@ urlpatterns = [
     path('login/', login_view, name='login'),
     path('employee/<int:employee_id>/', get_employee_by_id, name='get_employee_by_id'),
     path('update_employee/<int:employee_id>/', update_employee, name='update_employee'),
-    path('main-accounts/', get_main_accounts, name='get_main_accounts'),
-    path('end-client/', get_end_clients, name='get_end_clients'),
+    path('main_accounts/', get_main_accounts, name='get_main_accounts'),
+    path('api/end_clients/<int:main_client_id>/', get_end_clients, name='get_end_clients_by_main'),
     path('pass_type/', pass_type, name='pass_type'),
-    path('add-employee/', AddEmployeeAPIView.as_view(), name='add_employee'),
+    path('add_employee/', AddEmployeeAPIView.as_view(), name='add_employee'),
 
 ]
