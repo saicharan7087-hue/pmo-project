@@ -4,7 +4,7 @@ from .models import Employee, MainClient, EndClient, MigrantType
 class MainClientSerializer(serializers.ModelSerializer):
     class Meta:
         model = MainClient
-        fields = [ 'name', 'is_active']
+        fields = ['id', 'name', 'is_active']
 
 
 class EndClientSerializer(serializers.ModelSerializer):
@@ -12,7 +12,7 @@ class EndClientSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = EndClient
-        fields = [ 'name', 'is_active', 'main_client']
+        fields = ['id', 'name', 'is_active', 'main_client']
 
 
 class EmployeeSerializer(serializers.ModelSerializer):
@@ -52,7 +52,9 @@ class EmployeeSerializer(serializers.ModelSerializer):
             end_client, _ = EndClient.objects.get_or_create(name=end_client_name, main_client=main_account)
 
         if pass_type_value:
-
+            if pass_type_value.isdigit():
+                pass_type = MigrantType.objects.filter(id=int(pass_type_value)).first()
+            else:
                 pass_type, _ = MigrantType.objects.get_or_create(migrant_name=pass_type_value)
 
         employee = Employee.objects.create(
@@ -64,6 +66,7 @@ class EmployeeSerializer(serializers.ModelSerializer):
         return employee
 
     def update(self, instance, validated_data):
+        """Allow partial update of employee details."""
         instance.full_name = validated_data.get('full_name', instance.full_name)
         instance.email = validated_data.get('email', instance.email)
         instance.phone = validated_data.get('phone', instance.phone)
@@ -71,6 +74,7 @@ class EmployeeSerializer(serializers.ModelSerializer):
         instance.is_active = validated_data.get('is_active', instance.is_active)
         instance.client_account_manager = validated_data.get('client_account_manager', instance.client_account_manager)
         instance.client_account_manager_email = validated_data.get('client_account_manager_email', instance.client_account_manager_email)
+
         main_account_name = validated_data.get('main_account')
         end_client_name = validated_data.get('end_client')
         pass_type_value = validated_data.get('pass_type')

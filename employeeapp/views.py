@@ -1,43 +1,49 @@
-from rest_framework.decorators import api_view, parser_classes
-from rest_framework.parsers import MultiPartParser, FormParser
+from django.views.decorators.csrf import csrf_exempt
+from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.views import APIView
-from django.contrib.auth import authenticate
-import pandas as pd
-from django.db.models import Q
-from .models import Employee, MainClient, EndClient, MigrantType, PassType
-from .serializers import EmployeeSerializer
+import json
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from .models import Employee,PassType,EndClient,MainClient
 
-# ---------------- Employee List ----------------
+from .serializers import    EmployeeSerializer
+from django.shortcuts import get_object_or_404
+from django.contrib.auth import authenticate
+
+
 @api_view(['GET'])
 def employee_list_api(request):
-    employees = Employee.objects.select_related('main_account', 'end_client', 'pass_type').all()
+    employees = Employee.objects.all()
     serializer = EmployeeSerializer(employees, many=True)
     return Response(serializer.data)
 
-# ---------------- Employee Login ----------------
-@api_view(['POST'])
+
+@csrf_exempt  # <-- important for disabling CSRF (since you're using Postman)
+@api_view(['POST'])  # <-- tells Django REST Framework to expect POST requests
 def login_view(request):
     username = request.data.get('username')
     password = request.data.get('password')
 
     user = authenticate(username=username, password=password)
-    if user:
+    if user is not None:
         return Response({"message": "Login successful"})
-    return Response({"message": "Invalid credentials"}, status=400)
+    else:
+        return Response({"message": "Invalid credentials"}, status=400)
 
-# ---------------- Get Employee By ID ----------------
+
 @api_view(['GET'])
 def get_employee_by_id(request, employee_id):
     try:
         employee = Employee.objects.get(id=employee_id)
     except Employee.DoesNotExist:
         return Response({"error": "Employee not found"}, status=status.HTTP_404_NOT_FOUND)
-    serializer = EmployeeSerializer(employee)
-    return Response(serializer.data)
 
-# ---------------- Update Employee ----------------
+    serializer = EmployeeSerializer(employee)
+    return Response(serializer.data, status=status.HTTP_200_OK)
+
+
 @api_view(['PUT'])
 def update_employee(request, employee_id):
     try:
@@ -48,63 +54,115 @@ def update_employee(request, employee_id):
     serializer = EmployeeSerializer(employee, data=request.data, partial=True)
     if serializer.is_valid():
         serializer.save()
-        return Response({'message': 'Employee updated successfully', 'employee': serializer.data})
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-# ---------------- Main Accounts ----------------
+        return Response({
+            'message': 'Employee details updated successfully',
+            'employee': serializer.data
+        }, status=status.HTTP_200_OK)
+    else:
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 @api_view(['GET'])
 def get_main_accounts(request):
-    accounts = MainClient.objects.filter(is_active=True).values( 'name').order_by('name')
+    """
+    Returns only main account IDs and names.
+    """
+    accounts = MainClient.objects.filter(is_active=True).values('id', 'name').order_by('name')
     return Response(list(accounts))
 
-# ---------------- End Clients ----------------
 @api_view(['GET'])
-def get_end_clients(request, main_client_name=None):
-    if main_client_name:
-        clients = EndClient.objects.filter(main_client=main_client_name, is_active=True).values('id', 'name').order_by('name')
+def get_end_clients(request, main_client_id=None):
+    """
+    Returns end clients linked to a selected main client.
+    If a main_client_id is given, return active end clients for that main client.
+    """
+    if main_client_id:
+        clients = EndClient.objects.filter(main_client_id=main_client_id, is_active=True).values('id', 'name').order_by('name')
     else:
-        clients = EndClient.objects.filter(is_active=True).values( 'name').order_by('name')
-    return Response(list(clients))
+        clients = EndClient.objects.filter(is_active=True).values('id', 'name').order_by('name')
 
-# ---------------- Pass Types ----------------
+    return Response(list(clients))
 @api_view(['GET'])
 def pass_type(request):
-    types = PassType.objects.filter(is_active=True).values('id', 'name').order_by('name')
-    return Response(list(types))
+    ptype= PassType.objects.filter(is_active=True).values('id','name').order_by('name')
+    return Response(list(ptype))
 
-# ---------------- Add Employee API ----------------
-class AddEmployeeAPIView(APIView):
-    def post(self, request):
-        serializer = EmployeeSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response({"message": "Employee added successfully", "data": serializer.data}, status=201)
-        return Response(serializer.errors, status=400)
 
-# ---------------- Upload Employee Excel ----------------
+
+
+
+
+
+import pandas as pd
+from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.decorators import api_view, parser_classes
+from rest_framework.response import Response
+from rest_framework import status
+from .models import Employee, MainClient, EndClient, MigrantType
+from .serializers import EmployeeSerializer
+
+
+@api_view(['POST'])
+@parser_classes([MultiPartParser, FormParser])
+def upload_employee_excel(request):
+    """
+    Upload an Excel file and insert employee data into the database.
+    Expected Excel columns:
+    full_name, email, phone, main_account, end_client, client_account_manager,
+    client_account_manager_email, pass_type, date_of_joining, is_active
+    """
+    try:
+        excel_file = request.FILES.get('file')
+        if not excel_file:
+            return Response({'error': 'No file uploaded.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        df = pd.read_excel(excel_file)
+
+        required_columns = [
+            'full_name', 'email', 'phone', 'main_account', 'end_client',
+            'client_account_manager', 'client_account_manager_email',
+            'pass_type', 'date_of_joining'
+        ]
+        for col in required_columns:
+            if col not in df.columns:
+                return Response({'error': f'Missing column: {col}'}, status=status.HTTP_400_BAD_REQUEST)
+
+        inserted_records = []
+
+        for _, row in df.iterrows():
+            main_client = MainClient.objects.filter(name=row['main_account']).first()
+            end_client = EndClient.objects.filter(name=row['end_client']).first()
+            pass_type = MigrantType.objects.filter(migrant_name=row['pass_type']).first()
+
+            employee = Employee.objects.create(
+                full_name=row['full_name'],
+                email=row['email'],
+                phone=row['phone'],
+                main_account=main_client,
+                end_client=end_client,
+                client_account_manager=row.get('client_account_manager', ''),
+                client_account_manager_email=row.get('client_account_manager_email', ''),
+                pass_type=pass_type,
+                date_of_joining=row['date_of_joining'],
+                is_active=True
+            )
+            inserted_records.append(employee.id)
+
+        return Response({
+            "message": "Employee data uploaded successfully",
+            "inserted_count": len(inserted_records)
+        }, status=status.HTTP_201_CREATED)
+
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
 @api_view(['POST'])
 def add_employee(request):
     """
     Add an employee using JSON data.
-    Prevent duplicates based on full_name, email, or phone.
     """
     try:
         data = request.data
 
-        # Duplicate check
-        duplicate = Employee.objects.filter(
-            Q(full_name__iexact=data.get('full_name')) |
-            Q(email__iexact=data.get('email')) |
-            Q(phone__iexact=data.get('phone'))
-        ).exists()
-
-        if duplicate:
-            return Response(
-                {"error": "Duplicate employee (same name, email, or phone) already exists."},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        # Foreign key checks
         main_client = MainClient.objects.filter(name=data.get('main_account')).first()
         if not main_client:
             return Response({'error': f"Main account '{data.get('main_account')}' not found"}, status=400)
@@ -117,7 +175,6 @@ def add_employee(request):
         if not pass_type:
             return Response({'error': f"Pass type '{data.get('pass_type')}' not found"}, status=400)
 
-        # Create employee
         employee = Employee.objects.create(
             full_name=data.get('full_name'),
             email=data.get('email'),
@@ -132,79 +189,17 @@ def add_employee(request):
         )
 
         serializer = EmployeeSerializer(employee)
-        return Response({"message": "Employee added successfully", "data": serializer.data}, status=201)
-
-    except Exception as e:
-        return Response({"error": str(e)}, status=500)
-
-
-# -------------------- EXCEL UPLOAD API --------------------
-@api_view(['POST'])
-@parser_classes([MultiPartParser, FormParser])
-def upload_employee_excel(request):
-    """
-    Upload an Excel file containing employee data.
-    Prevent duplicates based on full_name, email, or phone.
-    """
-    excel_file = request.FILES.get('file')
-    if not excel_file:
-        return Response({'error': 'No file uploaded. Use key "file".'}, status=400)
-
-    try:
-        df = pd.read_excel(excel_file)
-        required_columns = [
-            'full_name', 'email', 'phone', 'main_account', 'end_client',
-            'pass_type', 'date_of_joining', 'client_account_manager', 'client_account_manager_email'
-        ]
-
-        for col in required_columns:
-            if col not in df.columns:
-                return Response({'error': f'Missing required column: {col}'}, status=400)
-
-        inserted = []
-        skipped = []
-
-        for _, row in df.iterrows():
-            full_name = str(row['full_name']).strip()
-            email = str(row['email']).strip()
-            phone = str(row['phone']).strip()
-
-            # Check for duplicates
-            if Employee.objects.filter(
-                Q(full_name__iexact=full_name) | Q(email__iexact=email) | Q(phone__iexact=phone)
-            ).exists():
-                skipped.append(full_name)
-                continue
-
-            # Foreign keys
-            main_client = MainClient.objects.filter(name=row['main_account']).first()
-            end_client = EndClient.objects.filter(name=row['end_client']).first()
-            pass_type = MigrantType.objects.filter(migrant_name=row['pass_type']).first()
-
-            if not (main_client and end_client and pass_type):
-                skipped.append(full_name)
-                continue
-
-            # Create employee
-            Employee.objects.create(
-                full_name=full_name,
-                email=email,
-                phone=phone,
-                main_account=main_client,
-                end_client=end_client,
-                client_account_manager=row['client_account_manager'],
-                client_account_manager_email=row['client_account_manager_email'],
-                pass_type=pass_type,
-                date_of_joining=row['date_of_joining'],
-                is_active=True
-            )
-            inserted.append(full_name)
-
         return Response({
-            'message': 'Upload complete.',
-            'inserted_employees': inserted,
-            'skipped_duplicates': skipped
-        }, status=201)
+            "message": "Employee added successfully",
+            "data": serializer.data
+        }, status=status.HTTP_201_CREATED)
 
     except Exception as e:
-        return Response({'error': str(e)}, status=500)
+        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+
+
+
+
+
