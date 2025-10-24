@@ -4,7 +4,7 @@ from .models import Employee, MainClient, EndClient, MigrantType
 class MainClientSerializer(serializers.ModelSerializer):
     class Meta:
         model = MainClient
-        fields = ['id', 'name', 'is_active']
+        fields = [ 'name', 'is_active']
 
 
 class EndClientSerializer(serializers.ModelSerializer):
@@ -12,7 +12,7 @@ class EndClientSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = EndClient
-        fields = ['id', 'name', 'is_active', 'main_client']
+        fields = [ 'name', 'is_active', 'main_client']
 
 
 class EmployeeSerializer(serializers.ModelSerializer):
@@ -52,9 +52,7 @@ class EmployeeSerializer(serializers.ModelSerializer):
             end_client, _ = EndClient.objects.get_or_create(name=end_client_name, main_client=main_account)
 
         if pass_type_value:
-            if pass_type_value.isdigit():
-                pass_type = MigrantType.objects.filter(id=int(pass_type_value)).first()
-            else:
+
                 pass_type, _ = MigrantType.objects.get_or_create(migrant_name=pass_type_value)
 
         employee = Employee.objects.create(
