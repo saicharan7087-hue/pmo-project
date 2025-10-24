@@ -103,82 +103,107 @@ from .serializers import EmployeeSerializer
 @api_view(['POST'])
 @parser_classes([MultiPartParser, FormParser])
 def upload_employee_excel(request):
-    """
-    Upload an Excel file and insert employee data into the database.
-    Expected Excel columns:
-    full_name, email, phone, main_account, end_client, client_account_manager,
-    client_account_manager_email, pass_type, date_of_joining, is_active
-    """
+    excel_file = request.FILES.get('file')
+    if not excel_file:
+        return Response({'error': 'No file uploaded.'}, status=400)
+
     try:
-        excel_file = request.FILES.get('file')
-        if not excel_file:
-            return Response({'error': 'No file uploaded.'}, status=status.HTTP_400_BAD_REQUEST)
-
         df = pd.read_excel(excel_file)
-
         required_columns = [
             'full_name', 'email', 'phone', 'main_account', 'end_client',
-            'client_account_manager', 'client_account_manager_email',
-            'pass_type', 'date_of_joining'
+            'pass_type', 'date_of_joining', 'client_account_manager', 'client_account_manager_email'
         ]
         for col in required_columns:
             if col not in df.columns:
-                return Response({'error': f'Missing column: {col}'}, status=status.HTTP_400_BAD_REQUEST)
+                return Response({'error': f'Missing column: {col}'}, status=400)
 
-        inserted_records = []
+        inserted, skipped = [], []
 
         for _, row in df.iterrows():
+            full_name = str(row['full_name']).strip().lower()
+            email = str(row['email']).strip().lower()
+            phone = str(row['phone']).strip()
+
+            if Employee.objects.filter(
+                Q(full_name__iexact=full_name) |
+                Q(email__iexact=email) |
+                Q(phone__iexact=phone)
+            ).exists():
+                skipped.append(full_name)
+                continue
+
             main_client = MainClient.objects.filter(name=row['main_account']).first()
             end_client = EndClient.objects.filter(name=row['end_client']).first()
             pass_type = MigrantType.objects.filter(migrant_name=row['pass_type']).first()
 
-            employee = Employee.objects.create(
-                full_name=row['full_name'],
-                email=row['email'],
-                phone=row['phone'],
+            if not (main_client and end_client and pass_type):
+                skipped.append(full_name)
+                continue
+
+            Employee.objects.create(
+                full_name=full_name,
+                email=email,
+                phone=phone,
                 main_account=main_client,
                 end_client=end_client,
-                client_account_manager=row.get('client_account_manager', ''),
-                client_account_manager_email=row.get('client_account_manager_email', ''),
+                client_account_manager=row['client_account_manager'],
+                client_account_manager_email=row['client_account_manager_email'],
                 pass_type=pass_type,
                 date_of_joining=row['date_of_joining'],
                 is_active=True
             )
-            inserted_records.append(employee.id)
+            inserted.append(full_name)
 
         return Response({
-            "message": "Employee data uploaded successfully",
-            "inserted_count": len(inserted_records)
-        }, status=status.HTTP_201_CREATED)
+            "message": "Upload complete",
+            "inserted": inserted,
+            "skipped_duplicates": skipped
+        }, status=201)
 
     except Exception as e:
-        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return Response({'error': str(e)}, status=500)
 
+
+
+from django.db.models import Q
+from rest_framework.decorators import api_view, parser_classes
+from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.response import Response
+from rest_framework import status
+import pandas as pd
+from .models import Employee, MainClient, EndClient, MigrantType
+from .serializers import EmployeeSerializer
 
 @api_view(['POST'])
 def add_employee(request):
     """
-    Add an employee using JSON data.
+    Add an employee using JSON data with duplicate prevention.
     """
     try:
         data = request.data
 
+        full_name = str(data.get('full_name', '')).strip().lower()
+        email = str(data.get('email', '')).strip().lower()
+        phone = str(data.get('phone', '')).strip()
+
+        if Employee.objects.filter(
+            Q(full_name__iexact=full_name) |
+            Q(email__iexact=email) |
+            Q(phone__iexact=phone)
+        ).exists():
+            return Response({"error": "Duplicate employee already exists."}, status=400)
+
         main_client = MainClient.objects.filter(name=data.get('main_account')).first()
-        if not main_client:
-            return Response({'error': f"Main account '{data.get('main_account')}' not found"}, status=400)
-
         end_client = EndClient.objects.filter(name=data.get('end_client')).first()
-        if not end_client:
-            return Response({'error': f"End client '{data.get('end_client')}' not found"}, status=400)
-
         pass_type = MigrantType.objects.filter(migrant_name=data.get('pass_type')).first()
-        if not pass_type:
-            return Response({'error': f"Pass type '{data.get('pass_type')}' not found"}, status=400)
+
+        if not (main_client and end_client and pass_type):
+            return Response({"error": "Invalid main client, end client, or pass type."}, status=400)
 
         employee = Employee.objects.create(
-            full_name=data.get('full_name'),
-            email=data.get('email'),
-            phone=data.get('phone'),
+            full_name=full_name,
+            email=email,
+            phone=phone,
             main_account=main_client,
             end_client=end_client,
             client_account_manager=data.get('client_account_manager'),
@@ -189,16 +214,10 @@ def add_employee(request):
         )
 
         serializer = EmployeeSerializer(employee)
-        return Response({
-            "message": "Employee added successfully",
-            "data": serializer.data
-        }, status=status.HTTP_201_CREATED)
+        return Response({"message": "Employee added successfully", "data": serializer.data}, status=201)
 
     except Exception as e:
-        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-
-
+        return Response({"error": str(e)}, status=500)
 
 
 
