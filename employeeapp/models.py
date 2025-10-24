@@ -25,9 +25,9 @@ class MigrantType(models.Model):
 
 
 class Employee(models.Model):
-    full_name = models.CharField(max_length=100)
-    email = models.EmailField()
-    phone = models.CharField(max_length=20, blank=True, null=True)
+    full_name = models.CharField(max_length=100,unique=True)
+    email = models.EmailField(unique=True)
+    phone = models.CharField(max_length=20, blank=True, null=True,unique=True)
     main_account = models.ForeignKey(MainClient, on_delete=models.SET_NULL, null=True, blank=True)
     end_client = models.ForeignKey(EndClient, on_delete=models.SET_NULL, null=True, blank=True)
     client_account_manager = models.CharField(max_length=100, blank=True, null=True)

@@ -5,6 +5,7 @@ from rest_framework import status
 from rest_framework.views import APIView
 from django.contrib.auth import authenticate
 import pandas as pd
+from django.db.models import Q
 from .models import Employee, MainClient, EndClient, MigrantType, PassType
 from .serializers import EmployeeSerializer
 
@@ -82,43 +83,28 @@ class AddEmployeeAPIView(APIView):
 
 # ---------------- Upload Employee Excel ----------------
 @api_view(['POST'])
-@parser_classes([MultiPartParser, FormParser])
-def upload_employee_excel(request):
-    excel_file = request.FILES.get('file')
-    if not excel_file:
-        return Response({'error': 'No file uploaded. Use key "file".'}, status=status.HTTP_400_BAD_REQUEST)
-
-    try:
-        df = pd.read_excel(excel_file)
-
-        required_columns = ['full_name', 'email', 'phone', 'main_account', 'end_client', 'pass_type', 'date_of_joining', 'client_account_manager', 'client_account_manager_email']
-        for col in required_columns:
-            if col not in df.columns:
-                return Response({'error': f'Missing required column: {col}'}, status=status.HTTP_400_BAD_REQUEST)
-
-        inserted_ids = []
-        for _, row in df.iterrows():
-            serializer = EmployeeSerializer(data=row.to_dict())
-            if serializer.is_valid():
-                employee = serializer.save()
-                inserted_ids.append(employee.id)
-            else:
-                return Response({'error': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
-
-        return Response({'message': 'Employees uploaded successfully', 'inserted_ids': inserted_ids}, status=201)
-    except Exception as e:
-        return Response({'error': str(e)}, status=500)
-
-
-
-@api_view(['POST'])
 def add_employee(request):
     """
     Add an employee using JSON data.
+    Prevent duplicates based on full_name, email, or phone.
     """
     try:
         data = request.data
 
+        # Duplicate check
+        duplicate = Employee.objects.filter(
+            Q(full_name__iexact=data.get('full_name')) |
+            Q(email__iexact=data.get('email')) |
+            Q(phone__iexact=data.get('phone'))
+        ).exists()
+
+        if duplicate:
+            return Response(
+                {"error": "Duplicate employee (same name, email, or phone) already exists."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Foreign key checks
         main_client = MainClient.objects.filter(name=data.get('main_account')).first()
         if not main_client:
             return Response({'error': f"Main account '{data.get('main_account')}' not found"}, status=400)
@@ -131,6 +117,7 @@ def add_employee(request):
         if not pass_type:
             return Response({'error': f"Pass type '{data.get('pass_type')}' not found"}, status=400)
 
+        # Create employee
         employee = Employee.objects.create(
             full_name=data.get('full_name'),
             email=data.get('email'),
@@ -145,10 +132,79 @@ def add_employee(request):
         )
 
         serializer = EmployeeSerializer(employee)
-        return Response({
-            "message": "Employee added successfully",
-            "data": serializer.data
-        }, status=status.HTTP_201_CREATED)
+        return Response({"message": "Employee added successfully", "data": serializer.data}, status=201)
 
     except Exception as e:
-        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return Response({"error": str(e)}, status=500)
+
+
+# -------------------- EXCEL UPLOAD API --------------------
+@api_view(['POST'])
+@parser_classes([MultiPartParser, FormParser])
+def upload_employee_excel(request):
+    """
+    Upload an Excel file containing employee data.
+    Prevent duplicates based on full_name, email, or phone.
+    """
+    excel_file = request.FILES.get('file')
+    if not excel_file:
+        return Response({'error': 'No file uploaded. Use key "file".'}, status=400)
+
+    try:
+        df = pd.read_excel(excel_file)
+        required_columns = [
+            'full_name', 'email', 'phone', 'main_account', 'end_client',
+            'pass_type', 'date_of_joining', 'client_account_manager', 'client_account_manager_email'
+        ]
+
+        for col in required_columns:
+            if col not in df.columns:
+                return Response({'error': f'Missing required column: {col}'}, status=400)
+
+        inserted = []
+        skipped = []
+
+        for _, row in df.iterrows():
+            full_name = str(row['full_name']).strip()
+            email = str(row['email']).strip()
+            phone = str(row['phone']).strip()
+
+            # Check for duplicates
+            if Employee.objects.filter(
+                Q(full_name__iexact=full_name) | Q(email__iexact=email) | Q(phone__iexact=phone)
+            ).exists():
+                skipped.append(full_name)
+                continue
+
+            # Foreign keys
+            main_client = MainClient.objects.filter(name=row['main_account']).first()
+            end_client = EndClient.objects.filter(name=row['end_client']).first()
+            pass_type = MigrantType.objects.filter(migrant_name=row['pass_type']).first()
+
+            if not (main_client and end_client and pass_type):
+                skipped.append(full_name)
+                continue
+
+            # Create employee
+            Employee.objects.create(
+                full_name=full_name,
+                email=email,
+                phone=phone,
+                main_account=main_client,
+                end_client=end_client,
+                client_account_manager=row['client_account_manager'],
+                client_account_manager_email=row['client_account_manager_email'],
+                pass_type=pass_type,
+                date_of_joining=row['date_of_joining'],
+                is_active=True
+            )
+            inserted.append(full_name)
+
+        return Response({
+            'message': 'Upload complete.',
+            'inserted_employees': inserted,
+            'skipped_duplicates': skipped
+        }, status=201)
+
+    except Exception as e:
+        return Response({'error': str(e)}, status=500)
