@@ -54,7 +54,7 @@ def update_employee(request, employee_id):
 # ---------------- Main Accounts ----------------
 @api_view(['GET'])
 def get_main_accounts(request):
-    accounts = MainClient.objects.filter(is_active=True).values('id', 'name').order_by('name')
+    accounts = MainClient.objects.filter(is_active=True).values( 'name').order_by('name')
     return Response(list(accounts))
 
 # ---------------- End Clients ----------------
@@ -63,7 +63,7 @@ def get_end_clients(request, main_client_name=None):
     if main_client_name:
         clients = EndClient.objects.filter(main_client=main_client_name, is_active=True).values('id', 'name').order_by('name')
     else:
-        clients = EndClient.objects.filter(is_active=True).values('id', 'name').order_by('name')
+        clients = EndClient.objects.filter(is_active=True).values( 'name').order_by('name')
     return Response(list(clients))
 
 # ---------------- Pass Types ----------------
