@@ -59,9 +59,9 @@ def get_main_accounts(request):
 
 # ---------------- End Clients ----------------
 @api_view(['GET'])
-def get_end_clients(request, main_client_id=None):
-    if main_client_id:
-        clients = EndClient.objects.filter(main_client_id=main_client_id, is_active=True).values('id', 'name').order_by('name')
+def get_end_clients(request, main_client_name=None):
+    if main_client_name:
+        clients = EndClient.objects.filter(main_client=main_client_name, is_active=True).values('id', 'name').order_by('name')
     else:
         clients = EndClient.objects.filter(is_active=True).values('id', 'name').order_by('name')
     return Response(list(clients))
