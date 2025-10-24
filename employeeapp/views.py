@@ -108,3 +108,47 @@ def upload_employee_excel(request):
         return Response({'message': 'Employees uploaded successfully', 'inserted_ids': inserted_ids}, status=201)
     except Exception as e:
         return Response({'error': str(e)}, status=500)
+
+
+
+@api_view(['POST'])
+def add_employee(request):
+    """
+    Add an employee using JSON data.
+    """
+    try:
+        data = request.data
+
+        main_client = MainClient.objects.filter(name=data.get('main_account')).first()
+        if not main_client:
+            return Response({'error': f"Main account '{data.get('main_account')}' not found"}, status=400)
+
+        end_client = EndClient.objects.filter(name=data.get('end_client')).first()
+        if not end_client:
+            return Response({'error': f"End client '{data.get('end_client')}' not found"}, status=400)
+
+        pass_type = MigrantType.objects.filter(migrant_name=data.get('pass_type')).first()
+        if not pass_type:
+            return Response({'error': f"Pass type '{data.get('pass_type')}' not found"}, status=400)
+
+        employee = Employee.objects.create(
+            full_name=data.get('full_name'),
+            email=data.get('email'),
+            phone=data.get('phone'),
+            main_account=main_client,
+            end_client=end_client,
+            client_account_manager=data.get('client_account_manager'),
+            client_account_manager_email=data.get('client_account_manager_email'),
+            pass_type=pass_type,
+            date_of_joining=data.get('date_of_joining'),
+            is_active=data.get('is_active', True)
+        )
+
+        serializer = EmployeeSerializer(employee)
+        return Response({
+            "message": "Employee added successfully",
+            "data": serializer.data
+        }, status=status.HTTP_201_CREATED)
+
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
