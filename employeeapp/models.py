@@ -55,6 +55,3 @@ class PassType(models.Model):
         return self.name
 
 
-
-
-

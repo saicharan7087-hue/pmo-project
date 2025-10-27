@@ -15,21 +15,25 @@ class EndClientSerializer(serializers.ModelSerializer):
         fields = ['id', 'name', 'is_active', 'main_client']
 
 
-from rest_framework import serializers
-from .models import Employee, MainClient, EndClient, MigrantType
-
 class EmployeeSerializer(serializers.ModelSerializer):
-    main_account = serializers.CharField(source='main_account.name', read_only=True)
-    end_client = serializers.CharField(source='end_client.name', read_only=True)
-    pass_type = serializers.CharField(source='pass_type.migrant_name', read_only=True)
+    main_account = serializers.CharField(required=False)
+    end_client = serializers.CharField(required=False)
+    pass_type = serializers.CharField(required=False)
 
     class Meta:
         model = Employee
         fields = [
-            'id', 'full_name', 'email', 'phone',
-            'main_account', 'end_client',
-            'client_account_manager', 'client_account_manager_email',
-            'pass_type', 'date_of_joining', 'is_active'
+            'id',
+            'full_name',
+            'email',
+            'phone',
+            'main_account',
+            'end_client',
+            'client_account_manager',
+            'client_account_manager_email',
+            'pass_type',
+            'date_of_joining',
+            'is_active'
         ]
 
     def create(self, validated_data):
