@@ -185,11 +185,9 @@ from .serializers import EmployeeSerializer
 
 @api_view(['POST'])
 def add_employee(request):
-    """
-    Add an employee using JSON data with duplicate prevention.
-    """
     try:
         data = request.data
+        print("📥 Incoming data:", data)  # Debug print
 
         full_name = str(data.get('full_name', '')).strip().lower()
         email = str(data.get('email', '')).strip().lower()
@@ -202,12 +200,25 @@ def add_employee(request):
         ).exists():
             return Response({"error": "Duplicate employee already exists."}, status=400)
 
-        main_client = MainClient.objects.filter(name=data.get('main_account')).first()
-        end_client = EndClient.objects.filter(name=data.get('end_client')).first()
-        pass_type = MigrantType.objects.filter(migrant_name=data.get('pass_type')).first()
+        main_client_name = data.get('main_account')
+        end_client_name = data.get('end_client')
+        pass_type_name = data.get('pass_type')
+
+        print("🧩 Main:", main_client_name, "| End:", end_client_name, "| Pass:", pass_type_name)
+
+        main_client = MainClient.objects.filter(name=main_client_name).first()
+        end_client = EndClient.objects.filter(name=end_client_name).first()
+        pass_type = MigrantType.objects.filter(migrant_name=pass_type_name).first()
+
+        print("🔍 Found:", main_client, end_client, pass_type)
 
         if not (main_client and end_client and pass_type):
-            return Response({"error": "Invalid main client, end client, or pass type."}, status=400)
+            return Response({
+                "error": "Invalid main client, end client, or pass type.",
+                "main_client_found": bool(main_client),
+                "end_client_found": bool(end_client),
+                "pass_type_found": bool(pass_type)
+            }, status=400)
 
         employee = Employee.objects.create(
             full_name=full_name,
