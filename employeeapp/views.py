@@ -69,15 +69,17 @@ def get_main_accounts(request):
     return Response(list(accounts))
 
 @api_view(['GET'])
-def get_end_clients(request, main_client_id=None):
+def get_end_clients(request, main_client_id):
     """
-    Returns end clients linked to a selected main client.
-    If a main_client_id is given, return active end clients for that main client.
+    Return end clients linked to a given main client ID
     """
-    if main_client_id:
-        clients = EndClient.objects.filter(main_client_id=main_client_id, is_active=True).values('id', 'name').order_by('name')
-    else:
-        clients = EndClient.objects.filter(is_active=True).values('id', 'name').order_by('name')
+    try:
+        main_client = MainClient.objects.get(id=main_client_id)
+    except MainClient.DoesNotExist:
+        return Response({'error': 'Main client not found'}, status=404)
+
+    end_clients = EndClient.objects.filter(main_client=main_client, is_active=True).values('id', 'name')
+    return Response(list(end_clients))
 
     return Response(list(clients))
 @api_view(['GET'])
@@ -218,7 +220,6 @@ def add_employee(request):
 
     except Exception as e:
         return Response({"error": str(e)}, status=500)
-
 
 
 

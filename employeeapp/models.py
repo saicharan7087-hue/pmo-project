@@ -58,4 +58,3 @@ class PassType(models.Model):
 
 
 
-
