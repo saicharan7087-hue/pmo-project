@@ -22,7 +22,7 @@ class EmployeeSerializer(serializers.ModelSerializer):
             'date_of_joining', 'is_active'
         ]
 
-    # ✅ Duplicate validation logic
+    #  Duplicate validation logic
     def validate(self, data):
         full_name = data.get('full_name')
         email = data.get('email')
@@ -39,25 +39,25 @@ class EmployeeSerializer(serializers.ModelSerializer):
             existing = existing.exclude(id=instance.id)
 
         if existing.exists():
-            raise serializers.ValidationError("❌ Employee with the same name, email, and phone already exists.")
+            raise serializers.ValidationError(" Employee with the same name, email, and phone already exists.")
 
         # Check email uniqueness
         email_exists = Employee.objects.filter(email=email)
         if instance:
             email_exists = email_exists.exclude(id=instance.id)
         if email_exists.exists():
-            raise serializers.ValidationError("❌ This email is already registered.")
+            raise serializers.ValidationError(" This email is already registered.")
 
         # Check phone uniqueness
         phone_exists = Employee.objects.filter(phone=phone)
         if instance:
             phone_exists = phone_exists.exclude(id=instance.id)
         if phone_exists.exists():
-            raise serializers.ValidationError("❌ This phone number is already registered.")
+            raise serializers.ValidationError(" This phone number is already registered.")
 
         return data
 
-    # ✅ Create or update helper
+    # Create or update helper
     def create_or_update_employee(self, validated_data, instance=None):
         main_account_name = validated_data.pop('main_account', None)
         end_client_name = validated_data.pop('end_client', None)
@@ -67,11 +67,11 @@ class EmployeeSerializer(serializers.ModelSerializer):
         end_client = None
         pass_type = None
 
-        # ---- Handle main client ----
+
         if main_account_name:
             main_account, _ = MainClient.objects.get_or_create(name=main_account_name)
 
-        # ---- Handle end client ----
+
         if end_client_name:
             if main_account:
                 end_client, _ = EndClient.objects.get_or_create(
@@ -80,11 +80,11 @@ class EmployeeSerializer(serializers.ModelSerializer):
             else:
                 end_client, _ = EndClient.objects.get_or_create(name=end_client_name)
 
-        # ---- Handle pass type ----
+
         if pass_type_name:
             pass_type, _ = MigrantType.objects.get_or_create(migrant_name=pass_type_name)
 
-        # ---- Update existing employee ----
+
         if instance:
             for attr, value in validated_data.items():
                 setattr(instance, attr, value)
@@ -94,7 +94,7 @@ class EmployeeSerializer(serializers.ModelSerializer):
             instance.save()
             return instance
 
-        # ---- Create new employee ----
+
         return Employee.objects.create(
             main_account=main_account,
             end_client=end_client,
@@ -109,14 +109,14 @@ class EmployeeSerializer(serializers.ModelSerializer):
         return self.create_or_update_employee(validated_data, instance)
 
 
-# ----------------- MAIN CLIENT -----------------
+
 class MainClientSerializer(serializers.ModelSerializer):
     class Meta:
         model = MainClient
         fields = ['id', 'name']
 
 
-# ----------------- END CLIENT -----------------
+
 class EndClientSerializer(serializers.ModelSerializer):
     class Meta:
         model = EndClient

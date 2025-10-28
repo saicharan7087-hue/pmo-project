@@ -21,14 +21,14 @@ def login_view(request):
     return Response({"message": "Invalid credentials"}, status=400)
 
 
-# ✅ Add a single employee (no duplicates allowed)
+#  Add a single employee (no duplicates allowed)
 @api_view(['POST'])
 def add_employee(request):
     full_name = request.data.get('full_name', '').strip()
     email = request.data.get('email', '').strip().lower()
     phone = request.data.get('phone', '').strip()
 
-    # ❌ Check duplicate by name, email, phone
+    #  Check duplicate by name, email, phone
     if Employee.objects.filter(
         Q(full_name__iexact=full_name) | Q(email__iexact=email) | Q(phone__iexact=phone)
     ).exists():
@@ -41,13 +41,13 @@ def add_employee(request):
     if serializer.is_valid():
         serializer.save()
         return Response(
-            {"message": "✅ Employee added successfully", "data": serializer.data},
+            {"message": " Employee added successfully", "data": serializer.data},
             status=status.HTTP_201_CREATED
         )
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-# ✅ Update employee safely
+#  Update employee safely
 @api_view(['PUT'])
 def update_employee(request, employee_id):
     """
@@ -62,7 +62,7 @@ def update_employee(request, employee_id):
     email = request.data.get('email', '').strip().lower()
     phone = request.data.get('phone', '').strip()
 
-    # ❌ Check duplicate in other employees
+    #  Check duplicate in other employees
     if Employee.objects.filter(
         Q(full_name__iexact=full_name) | Q(email__iexact=email) | Q(phone__iexact=phone)
     ).exclude(id=employee_id).exists():
@@ -75,13 +75,13 @@ def update_employee(request, employee_id):
     if serializer.is_valid():
         serializer.save()
         return Response(
-            {"message": "✅ Employee updated successfully", "data": serializer.data},
+            {"message": "Employee updated successfully", "data": serializer.data},
             status=status.HTTP_200_OK
         )
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-# ✅ Get all employees
+
 @api_view(['GET'])
 def employee_list(request):
     employees = Employee.objects.all().order_by('id')
@@ -89,7 +89,7 @@ def employee_list(request):
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 
-# ✅ Upload employees via Excel (with duplicate restriction)
+
 @api_view(['POST'])
 @parser_classes([MultiPartParser, FormParser])
 def upload_employee_excel(request):
@@ -116,7 +116,7 @@ def upload_employee_excel(request):
             email = str(row['email']).strip().lower()
             phone = str(row['phone']).strip()
 
-            # ❌ Skip duplicate employee (any of name/email/phone)
+
             if Employee.objects.filter(
                 Q(full_name__iexact=full_name) | Q(email__iexact=email) | Q(phone__iexact=phone)
             ).exists():
@@ -141,7 +141,7 @@ def upload_employee_excel(request):
             inserted.append(full_name)
 
         return Response({
-            "message": "✅ Excel upload complete",
+            "message": " Excel upload complete",
             "inserted_count": len(inserted),
             "skipped_duplicates": len(skipped),
             "inserted": inserted,
