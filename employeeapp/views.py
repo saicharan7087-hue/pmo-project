@@ -70,32 +70,39 @@ def add_employee(request):
 @api_view(['PUT'])
 def update_employee(request, employee_id):
     """
-    Update an existing employee by ID.
-    Accepts IDs for main_account, end_client, pass_type.
-    Returns names in response.
+    Update an existing employee using either IDs or names.
+    Always returns names in response.
     """
     try:
         employee = Employee.objects.get(id=employee_id)
     except Employee.DoesNotExist:
-        return Response({"error": "Employee not found"}, status=status.HTTP_404_NOT_FOUND)
+        return Response({'error': 'Employee not found'}, status=status.HTTP_404_NOT_FOUND)
 
     data = request.data.copy()
 
-    # Convert IDs to model instances
-    main_account = MainClient.objects.filter(id=data.get('main_account')).first()
-    end_client = EndClient.objects.filter(id=data.get('end_client')).first()
-    pass_type = MigrantType.objects.filter(id=data.get('pass_type')).first()
+    # Resolve relationships
+    main_account = None
+    if data.get('main_account'):
+        if str(data['main_account']).isdigit():
+            main_account = MainClient.objects.filter(id=data['main_account']).first()
+        else:
+            main_account = MainClient.objects.filter(name=data['main_account']).first()
 
-    # Prevent duplicate check (excluding current record)
-    if Employee.objects.exclude(id=employee.id).filter(
-        full_name__iexact=data.get('full_name'),
-        email__iexact=data.get('email'),
-        phone=data.get('phone')
-    ).exists():
-        return Response({"error": "Duplicate employee details found."},
-                        status=status.HTTP_400_BAD_REQUEST)
+    end_client = None
+    if data.get('end_client'):
+        if str(data['end_client']).isdigit():
+            end_client = EndClient.objects.filter(id=data['end_client']).first()
+        else:
+            end_client = EndClient.objects.filter(name=data['end_client']).first()
 
-    # Update values
+    pass_type = None
+    if data.get('pass_type'):
+        if str(data['pass_type']).isdigit():
+            pass_type = MigrantType.objects.filter(id=data['pass_type']).first()
+        else:
+            pass_type = MigrantType.objects.filter(migrant_name=data['pass_type']).first()
+
+    # Update fields
     employee.full_name = data.get('full_name', employee.full_name)
     employee.email = data.get('email', employee.email)
     employee.phone = data.get('phone', employee.phone)
@@ -109,9 +116,7 @@ def update_employee(request, employee_id):
     employee.save()
 
     serializer = EmployeeSerializer(employee)
-    return Response({"message": "Employee updated successfully", "data": serializer.data},
-                    status=status.HTTP_200_OK)
-
+    return Response(serializer.data, status=status.HTTP_200_OK)
 
 @api_view(['GET'])
 def employee_list(request):
