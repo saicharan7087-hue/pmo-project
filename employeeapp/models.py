@@ -42,3 +42,16 @@ class Employee(models.Model):
 
     def __str__(self):
         return self.full_name
+
+
+class Task(models.Model):
+    TASK_TYPES = [
+        ('Development', 'Development'),
+        ('Service', 'Service'),
+        ('Error', 'Error'),
+    ]
+
+    name = models.CharField(max_length=100, choices=TASK_TYPES, unique=True)
+
+    def __str__(self):
+        return self.name

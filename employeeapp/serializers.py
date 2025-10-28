@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Employee, MainClient, EndClient, MigrantType
+from .models import Employee, MainClient, EndClient, MigrantType,Task
 
 
 class EmployeeSerializer(serializers.ModelSerializer):
@@ -120,4 +120,10 @@ class MainClientSerializer(serializers.ModelSerializer):
 class EndClientSerializer(serializers.ModelSerializer):
     class Meta:
         model = EndClient
+        fields = ['id', 'name']
+
+
+class TaskSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Task
         fields = ['id', 'name']

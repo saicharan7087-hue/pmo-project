@@ -5,8 +5,8 @@ from rest_framework import status
 from rest_framework.parsers import MultiPartParser, FormParser
 from django.db.models import Q
 import pandas as pd
-from .models import Employee, MainClient, EndClient, MigrantType
-from .serializers import EmployeeSerializer, MainClientSerializer, EndClientSerializer
+from .models import Employee, MainClient, EndClient, MigrantType,Task
+from .serializers import EmployeeSerializer, MainClientSerializer, EndClientSerializer,TaskSerializer
 
 
 # ---------------- Employee Login ----------------
@@ -152,17 +152,48 @@ def upload_employee_excel(request):
         return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-# ✅ Get End Clients
 @api_view(['GET'])
-def get_end_clients(request):
-    end_clients = EndClient.objects.all().order_by('id')
+def get_end_clients(request, main_client_id=None):
+    """
+    Get End Clients. If main_client_id is provided, filter by that main client.
+    Example:
+    /end_clients/          → returns all end clients
+    /end_clients/1/        → returns only end clients of main_client_id = 1
+    """
+    if main_client_id:
+        end_clients = EndClient.objects.filter(main_client_id=main_client_id)
+    else:
+        end_clients = EndClient.objects.all()
+
     serializer = EndClientSerializer(end_clients, many=True)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 
-# ✅ Get Main Clients
+
+
 @api_view(['GET'])
 def main_account_list(request):
     main_clients = MainClient.objects.all().order_by('id')
     serializer = MainClientSerializer(main_clients, many=True)
+    return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+
+@api_view(['GET', 'POST'])
+def task_view(request):
+    """
+    GET  → Return all tasks (Development, Service, Error)
+    POST → Add a new task type (optional)
+    """
+
+    if request.method == 'POST':
+        serializer = TaskSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({"message": "Task added successfully", "data": serializer.data}, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    # If GET request, return all task types
+    tasks = Task.objects.all().order_by('id')
+    serializer = TaskSerializer(tasks, many=True)
     return Response(serializer.data, status=status.HTTP_200_OK)
