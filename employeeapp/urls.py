@@ -1,15 +1,17 @@
 from django.urls import path
-from .views import employee_list_api, login_view,get_employee_by_id,update_employee,get_main_accounts,get_end_clients,pass_type,add_employee,upload_employee_excel
-
+from .views import employee_list, login_view,add_employee,upload_employee_excel,main_account_list,update_employee,get_end_clients
 urlpatterns = [
-    path('employee_list/', employee_list_api, name='employee_list_api'),
+
     path('login/', login_view, name='login'),
-    path('employee/<int:employee_id>/', get_employee_by_id, name='get_employee_by_id'),
-    path('update_employee/<int:employee_id>/', update_employee, name='update_employee'),
-    path('main_accounts/', get_main_accounts, name='get_main_accounts'),
-    path('api/end_clients/<int:main_client_id>/', get_end_clients, name='get_end_clients_by_main'),
-    path('pass_type/', pass_type, name='pass_type'),
     path('add_employee/', add_employee, name='add_employee'),
-    path('api/upload_employees/', upload_employee_excel),
+    path('employee_list/', employee_list, name='get_employee_list'),
+    path('upload_employee_excel/',upload_employee_excel, name='upload_employee_excel'),
+    path('Main_Clients/', main_account_list, name='Main_Clients'),
+    path('employees/<int:employee_id>/update/', update_employee, name='update_employee'),
+    path('end_clients/', get_end_clients, name='get_all_end_clients'),
 
 ]
+
+
+
+

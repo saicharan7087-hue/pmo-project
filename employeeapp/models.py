@@ -1,8 +1,7 @@
 from django.db import models
 
 class MainClient(models.Model):
-    name = models.CharField(max_length=100)
-    is_active = models.BooleanField(default=True)
+    name = models.CharField(max_length=100, unique=True)
 
     def __str__(self):
         return self.name
@@ -11,14 +10,16 @@ class MainClient(models.Model):
 class EndClient(models.Model):
     name = models.CharField(max_length=100)
     main_client = models.ForeignKey(MainClient, on_delete=models.CASCADE, related_name='end_clients')
-    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        unique_together = ('name', 'main_client')  # Prevent same end client name under same main client
 
     def __str__(self):
         return self.name
 
 
 class MigrantType(models.Model):
-    migrant_name = models.CharField(max_length=50)
+    migrant_name = models.CharField(max_length=50, unique=True)
 
     def __str__(self):
         return self.migrant_name
@@ -26,8 +27,8 @@ class MigrantType(models.Model):
 
 class Employee(models.Model):
     full_name = models.CharField(max_length=100)
-    email = models.EmailField(unique=True)  # ensures unique emails
-    phone = models.CharField(max_length=20, blank=True, null=True, unique=True)
+    email = models.EmailField(unique=True)
+    phone = models.CharField(max_length=20, unique=True)
     main_account = models.ForeignKey(MainClient, on_delete=models.SET_NULL, null=True, blank=True)
     end_client = models.ForeignKey(EndClient, on_delete=models.SET_NULL, null=True, blank=True)
     client_account_manager = models.CharField(max_length=100, blank=True, null=True)
@@ -37,21 +38,7 @@ class Employee(models.Model):
     is_active = models.BooleanField(default=True)
 
     class Meta:
-        constraints = [
-            models.UniqueConstraint(
-                fields=['full_name', 'email', 'phone'],
-                name='unique_employee_details'
-            )
-        ]
+        unique_together = ('full_name', 'email', 'phone')
 
     def __str__(self):
         return self.full_name
-
-class PassType(models.Model):
-    name = models.CharField(max_length=225)
-    is_active = models.BooleanField(default=True)
-
-    def __str__(self):
-        return self.name
-
-
