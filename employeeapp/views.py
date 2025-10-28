@@ -208,3 +208,20 @@ def pass_type_list(request):
     pass_types = MigrantType.objects.all().order_by('id')
     serializer = MigrantTypeSerializer(pass_types, many=True)
     return Response(serializer.data, status=status.HTTP_200_OK)
+
+@api_view(['GET'])
+def get_employee_by_id(request, employee_id):
+    """
+    Get employee details by ID
+    Example: /api/employees/5/
+    """
+    try:
+        employee = Employee.objects.get(id=employee_id)
+    except Employee.DoesNotExist:
+        return Response(
+            {"error": f"Employee with ID {employee_id} not found"},
+            status=status.HTTP_404_NOT_FOUND
+        )
+
+    serializer = EmployeeSerializer(employee)
+    return Response(serializer.data, status=status.HTTP_200_OK)
