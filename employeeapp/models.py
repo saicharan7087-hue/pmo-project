@@ -1,5 +1,6 @@
 from django.db import models
 
+
 class MainClient(models.Model):
     name = models.CharField(max_length=100, unique=True)
 
@@ -9,6 +10,7 @@ class MainClient(models.Model):
 
 class EndClient(models.Model):
     name = models.CharField(max_length=100)
+
     main_client = models.ForeignKey(MainClient, on_delete=models.CASCADE, related_name='end_clients')
 
     class Meta:
@@ -27,14 +29,23 @@ class MigrantType(models.Model):
 
 class Employee(models.Model):
     full_name = models.CharField(max_length=100)
+
     email = models.EmailField(unique=True)
+
     phone = models.CharField(max_length=20, unique=True)
+
     main_account = models.ForeignKey(MainClient, on_delete=models.SET_NULL, null=True, blank=True)
+
     end_client = models.ForeignKey(EndClient, on_delete=models.SET_NULL, null=True, blank=True)
+
     client_account_manager = models.CharField(max_length=100, blank=True, null=True)
+
     client_account_manager_email = models.EmailField(blank=True, null=True)
+
     pass_type = models.ForeignKey(MigrantType, on_delete=models.SET_NULL, null=True, blank=True)
+
     date_of_joining = models.DateField(blank=True, null=True)
+
     is_active = models.BooleanField(default=True)
 
     class Meta:
@@ -46,9 +57,13 @@ class Employee(models.Model):
 
 class Task(models.Model):
     TASK_TYPES = [
+
         ('Development', 'Development'),
+
         ('Service', 'Service'),
+
         ('Error', 'Error'),
+
     ]
 
     name = models.CharField(max_length=100, choices=TASK_TYPES, unique=True)

@@ -1,11 +1,12 @@
 from rest_framework import serializers
-from .models import Employee, MainClient, EndClient, MigrantType,Task
+from .models import Employee, MainClient, EndClient, MigrantType, Task
 
 
 class EmployeeSerializer(serializers.ModelSerializer):
     main_account = serializers.CharField(write_only=True, required=False)
     end_client = serializers.CharField(write_only=True, required=False)
     pass_type = serializers.CharField(write_only=True, required=False)
+
     main_account_name = serializers.CharField(source='main_account.name', read_only=True)
     end_client_name = serializers.CharField(source='end_client.name', read_only=True)
     pass_type_name = serializers.CharField(source='pass_type.migrant_name', read_only=True)
@@ -66,10 +67,8 @@ class EmployeeSerializer(serializers.ModelSerializer):
         end_client = None
         pass_type = None
 
-
         if main_account_name:
             main_account, _ = MainClient.objects.get_or_create(name=main_account_name)
-
 
         if end_client_name:
             if main_account:
@@ -79,10 +78,8 @@ class EmployeeSerializer(serializers.ModelSerializer):
             else:
                 end_client, _ = EndClient.objects.get_or_create(name=end_client_name)
 
-
         if pass_type_name:
             pass_type, _ = MigrantType.objects.get_or_create(migrant_name=pass_type_name)
-
 
         if instance:
             for attr, value in validated_data.items():
@@ -92,7 +89,6 @@ class EmployeeSerializer(serializers.ModelSerializer):
             instance.pass_type = pass_type
             instance.save()
             return instance
-
 
         return Employee.objects.create(
             main_account=main_account,
@@ -108,14 +104,10 @@ class EmployeeSerializer(serializers.ModelSerializer):
         return self.create_or_update_employee(validated_data, instance)
 
 
-
 class MainClientSerializer(serializers.ModelSerializer):
     class Meta:
         model = MainClient
         fields = ['id', 'name']
-
-
-
 
 
 class EndClientSerializer(serializers.ModelSerializer):
@@ -134,5 +126,3 @@ class MigrantTypeSerializer(serializers.ModelSerializer):
     class Meta:
         model = MigrantType
         fields = ['id', 'migrant_name']
-
-
