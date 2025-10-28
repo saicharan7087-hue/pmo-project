@@ -127,3 +127,9 @@ class TaskSerializer(serializers.ModelSerializer):
     class Meta:
         model = Task
         fields = ['id', 'name']
+
+
+class MigrantTypeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = MigrantType
+        fields = ['id', 'migrant_name']

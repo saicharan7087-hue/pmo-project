@@ -6,7 +6,7 @@ from rest_framework.parsers import MultiPartParser, FormParser
 from django.db.models import Q
 import pandas as pd
 from .models import Employee, MainClient, EndClient, MigrantType,Task
-from .serializers import EmployeeSerializer, MainClientSerializer, EndClientSerializer,TaskSerializer
+from .serializers import EmployeeSerializer, MainClientSerializer, EndClientSerializer,TaskSerializer,MigrantTypeSerializer
 
 
 # ---------------- Employee Login ----------------
@@ -196,4 +196,15 @@ def task_view(request):
     # If GET request, return all task types
     tasks = Task.objects.all().order_by('id')
     serializer = TaskSerializer(tasks, many=True)
+    return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+@api_view(['GET'])
+def pass_type_list(request):
+    """
+    Get all available Pass Types (Migrant Types)
+    Example: /api/passtypes/
+    """
+    pass_types = MigrantType.objects.all().order_by('id')
+    serializer = MigrantTypeSerializer(pass_types, many=True)
     return Response(serializer.data, status=status.HTTP_200_OK)
