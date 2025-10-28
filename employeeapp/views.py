@@ -21,65 +21,96 @@ def login_view(request):
     return Response({"message": "Invalid credentials"}, status=400)
 
 
-#  Add a single employee (no duplicates allowed)
 @api_view(['POST'])
 def add_employee(request):
-    full_name = request.data.get('full_name', '').strip()
-    email = request.data.get('email', '').strip().lower()
-    phone = request.data.get('phone', '').strip()
+    """
+    Add a new employee.
+    Accepts main_account and end_client as IDs from frontend.
+    Returns names instead of IDs in response.
+    """
+    data = request.data.copy()
 
-    #  Check duplicate by name, email, phone
+    # Get IDs
+    main_account_id = data.get('main_account')
+    end_client_id = data.get('end_client')
+    pass_type_id = data.get('pass_type')
+
+    main_account = MainClient.objects.filter(id=main_account_id).first() if main_account_id else None
+    end_client = EndClient.objects.filter(id=end_client_id).first() if end_client_id else None
+    pass_type = MigrantType.objects.filter(id=pass_type_id).first() if pass_type_id else None
+
+    # Prevent duplicate employee
     if Employee.objects.filter(
-        Q(full_name__iexact=full_name) | Q(email__iexact=email) | Q(phone__iexact=phone)
+        full_name__iexact=data.get('full_name'),
+        email__iexact=data.get('email'),
+        phone=data.get('phone')
     ).exists():
-        return Response(
-            {"error": "Duplicate employee detected (name, email, or phone already exists)."},
-            status=status.HTTP_400_BAD_REQUEST
-        )
+        return Response({"error": "Employee with same name, email or phone already exists"},
+                        status=status.HTTP_400_BAD_REQUEST)
 
-    serializer = EmployeeSerializer(data=request.data)
-    if serializer.is_valid():
-        serializer.save()
-        return Response(
-            {"message": " Employee added successfully", "data": serializer.data},
-            status=status.HTTP_201_CREATED
-        )
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    # Create employee
+    employee = Employee.objects.create(
+        full_name=data.get('full_name'),
+        email=data.get('email'),
+        phone=data.get('phone'),
+        main_account=main_account,
+        end_client=end_client,
+        client_account_manager=data.get('client_account_manager'),
+        client_account_manager_email=data.get('client_account_manager_email'),
+        pass_type=pass_type,
+        date_of_joining=data.get('date_of_joining'),
+        is_active=data.get('is_active', True)
+    )
+
+    serializer = EmployeeSerializer(employee)
+    return Response({"message": "Employee added successfully", "data": serializer.data},
+                    status=status.HTTP_201_CREATED)
 
 
-#  Update employee safely
 @api_view(['PUT'])
 def update_employee(request, employee_id):
     """
-    Update existing employee and ensure no duplicates.
+    Update an existing employee by ID.
+    Accepts IDs for main_account, end_client, pass_type.
+    Returns names in response.
     """
     try:
         employee = Employee.objects.get(id=employee_id)
     except Employee.DoesNotExist:
         return Response({"error": "Employee not found"}, status=status.HTTP_404_NOT_FOUND)
 
-    full_name = request.data.get('full_name', '').strip()
-    email = request.data.get('email', '').strip().lower()
-    phone = request.data.get('phone', '').strip()
+    data = request.data.copy()
 
-    #  Check duplicate in other employees
-    if Employee.objects.filter(
-        Q(full_name__iexact=full_name) | Q(email__iexact=email) | Q(phone__iexact=phone)
-    ).exclude(id=employee_id).exists():
-        return Response(
-            {"error": "Duplicate employee (name, email, or phone) already exists for another record."},
-            status=status.HTTP_400_BAD_REQUEST
-        )
+    # Convert IDs to model instances
+    main_account = MainClient.objects.filter(id=data.get('main_account')).first()
+    end_client = EndClient.objects.filter(id=data.get('end_client')).first()
+    pass_type = MigrantType.objects.filter(id=data.get('pass_type')).first()
 
-    serializer = EmployeeSerializer(employee, data=request.data, partial=True)
-    if serializer.is_valid():
-        serializer.save()
-        return Response(
-            {"message": "Employee updated successfully", "data": serializer.data},
-            status=status.HTTP_200_OK
-        )
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    # Prevent duplicate check (excluding current record)
+    if Employee.objects.exclude(id=employee.id).filter(
+        full_name__iexact=data.get('full_name'),
+        email__iexact=data.get('email'),
+        phone=data.get('phone')
+    ).exists():
+        return Response({"error": "Duplicate employee details found."},
+                        status=status.HTTP_400_BAD_REQUEST)
 
+    # Update values
+    employee.full_name = data.get('full_name', employee.full_name)
+    employee.email = data.get('email', employee.email)
+    employee.phone = data.get('phone', employee.phone)
+    employee.client_account_manager = data.get('client_account_manager', employee.client_account_manager)
+    employee.client_account_manager_email = data.get('client_account_manager_email', employee.client_account_manager_email)
+    employee.date_of_joining = data.get('date_of_joining', employee.date_of_joining)
+    employee.is_active = data.get('is_active', employee.is_active)
+    employee.main_account = main_account
+    employee.end_client = end_client
+    employee.pass_type = pass_type
+    employee.save()
+
+    serializer = EmployeeSerializer(employee)
+    return Response({"message": "Employee updated successfully", "data": serializer.data},
+                    status=status.HTTP_200_OK)
 
 
 @api_view(['GET'])
