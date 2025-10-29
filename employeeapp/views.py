@@ -5,9 +5,8 @@ from rest_framework import status
 from rest_framework.parsers import MultiPartParser, FormParser
 from django.db.models import Q
 import pandas as pd
-from .models import Employee, MainClient, EndClient, MigrantType, Task
-from .serializers import EmployeeSerializer, MainClientSerializer, EndClientSerializer, TaskSerializer, \
-    MigrantTypeSerializer
+from .models import Employee, MainClient, EndClient, MigrantType,Task
+from .serializers import EmployeeSerializer, MainClientSerializer, EndClientSerializer,TaskSerializer,MigrantTypeSerializer
 
 
 # ---------------- Employee Login ----------------
@@ -42,9 +41,9 @@ def add_employee(request):
 
     # Prevent duplicate employee
     if Employee.objects.filter(
-            full_name__iexact=data.get('full_name'),
-            email__iexact=data.get('email'),
-            phone=data.get('phone')
+        full_name__iexact=data.get('full_name'),
+        email__iexact=data.get('email'),
+        phone=data.get('phone')
     ).exists():
         return Response({"error": "Employee with same name, email or phone already exists"},
                         status=status.HTTP_400_BAD_REQUEST)
@@ -108,8 +107,7 @@ def update_employee(request, employee_id):
     employee.email = data.get('email', employee.email)
     employee.phone = data.get('phone', employee.phone)
     employee.client_account_manager = data.get('client_account_manager', employee.client_account_manager)
-    employee.client_account_manager_email = data.get('client_account_manager_email',
-                                                     employee.client_account_manager_email)
+    employee.client_account_manager_email = data.get('client_account_manager_email', employee.client_account_manager_email)
     employee.date_of_joining = data.get('date_of_joining', employee.date_of_joining)
     employee.is_active = data.get('is_active', employee.is_active)
     employee.main_account = main_account
@@ -120,12 +118,12 @@ def update_employee(request, employee_id):
     serializer = EmployeeSerializer(employee)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
-
 @api_view(['GET'])
 def employee_list(request):
     employees = Employee.objects.all().order_by('id')
     serializer = EmployeeSerializer(employees, many=True)
     return Response(serializer.data, status=status.HTTP_200_OK)
+
 
 
 @api_view(['POST'])
@@ -154,8 +152,9 @@ def upload_employee_excel(request):
             email = str(row['email']).strip().lower()
             phone = str(row['phone']).strip()
 
+
             if Employee.objects.filter(
-                    Q(full_name__iexact=full_name) | Q(email__iexact=email) | Q(phone__iexact=phone)
+                Q(full_name__iexact=full_name) | Q(email__iexact=email) | Q(phone__iexact=phone)
             ).exists():
                 skipped.append(full_name)
                 continue
@@ -206,11 +205,14 @@ def get_end_clients(request, main_client_id=None):
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 
+
+
 @api_view(['GET'])
 def main_account_list(request):
     main_clients = MainClient.objects.all().order_by('id')
     serializer = MainClientSerializer(main_clients, many=True)
     return Response(serializer.data, status=status.HTTP_200_OK)
+
 
 
 @api_view(['GET', 'POST'])
@@ -224,8 +226,7 @@ def task_view(request):
         serializer = TaskSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
-            return Response({"message": "Task added successfully", "data": serializer.data},
-                            status=status.HTTP_201_CREATED)
+            return Response({"message": "Task added successfully", "data": serializer.data}, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     # If GET request, return all task types
@@ -243,7 +244,6 @@ def pass_type_list(request):
     pass_types = MigrantType.objects.all().order_by('id')
     serializer = MigrantTypeSerializer(pass_types, many=True)
     return Response(serializer.data, status=status.HTTP_200_OK)
-
 
 @api_view(['GET'])
 def get_employee_by_id(request, employee_id):
