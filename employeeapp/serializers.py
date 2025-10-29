@@ -6,6 +6,7 @@ class EmployeeSerializer(serializers.ModelSerializer):
     main_account = serializers.CharField(write_only=True, required=False)
     end_client = serializers.CharField(write_only=True, required=False)
     pass_type = serializers.CharField(write_only=True, required=False)
+
     main_account_name = serializers.CharField(source='main_account.name', read_only=True)
     end_client_name = serializers.CharField(source='end_client.name', read_only=True)
     pass_type_name = serializers.CharField(source='pass_type.migrant_name', read_only=True)
@@ -116,8 +117,6 @@ class MainClientSerializer(serializers.ModelSerializer):
 
 
 
-
-
 class EndClientSerializer(serializers.ModelSerializer):
     class Meta:
         model = EndClient
@@ -133,6 +132,4 @@ class TaskSerializer(serializers.ModelSerializer):
 class MigrantTypeSerializer(serializers.ModelSerializer):
     class Meta:
         model = MigrantType
-        fields = ['id', 'name']
-
-
+        fields = ['id', 'migrant_name']

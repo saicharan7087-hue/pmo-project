@@ -19,10 +19,10 @@ class EndClient(models.Model):
 
 
 class MigrantType(models.Model):
-    name = models.CharField(max_length=50, unique=True)
+    migrant_name = models.CharField(max_length=50, unique=True)
 
     def __str__(self):
-        return self.name
+        return self.migrant_name
 
 
 class Employee(models.Model):
