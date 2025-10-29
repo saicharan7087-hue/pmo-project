@@ -5,8 +5,8 @@ from rest_framework import status
 from rest_framework.parsers import MultiPartParser, FormParser
 from django.db.models import Q
 import pandas as pd
-from .models import Employee, MainClient, EndClient, MigrantType,Task
-from .serializers import EmployeeSerializer, MainClientSerializer, EndClientSerializer,TaskSerializer,MigrantTypeSerializer
+from .models import Employee, MainClient, EndClient, MigrantType,Task,Type
+from .serializers import EmployeeSerializer, MainClientSerializer, EndClientSerializer,TaskSerializer,MigrantTypeSerializer,TypeSerializer
 
 
 # ---------------- Employee Login ----------------
@@ -233,6 +233,13 @@ def task_view(request):
     tasks = Task.objects.all().order_by('id')
     serializer = TaskSerializer(tasks, many=True)
     return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+@api_view(['GET'])
+def get_types_by_task(request, task_id):
+    types = Type.objects.filter(task_id=task_id)
+    serializer = TypeSerializer(types, many=True)
+    return Response(serializer.data)
 
 
 @api_view(['GET'])

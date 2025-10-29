@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import employee_list, login_view,add_employee,upload_employee_excel,main_account_list,update_employee,get_end_clients,task_view,pass_type_list,get_employee_by_id
+from .views import employee_list, login_view,add_employee,upload_employee_excel,main_account_list,update_employee,get_end_clients,task_view,pass_type_list,get_employee_by_id,get_types_by_task
 urlpatterns = [
 
     path('login/', login_view, name='login'),
@@ -16,6 +16,7 @@ urlpatterns = [
     path('end_clients/', get_end_clients, name='get_all_end_clients'),
     path('end_clients/<int:main_client_id>/', get_end_clients, name='get_end_clients_by_main_client'),
     path('tasks/', task_view, name='task_view'),
+    path('types/<int:task_id>/', get_types_by_task, name='get_types_by_task'),
 ]
 
 
