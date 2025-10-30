@@ -162,7 +162,7 @@ class TimesheetSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Timesheet
-        fields = ['id', 'user', 'user_name', 'month', 'weeks']
+        fields = ['id', 'user', 'user_name', 'month', 'weeks','Task','Type']
 
 
 class MigrantTypeSerializer(serializers.ModelSerializer):
