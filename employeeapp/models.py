@@ -69,7 +69,7 @@ class Type(models.Model):
 
 
 class Timesheet(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='timesheets')
     month = models.CharField(max_length=20)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -81,9 +81,10 @@ class Week(models.Model):
     timesheet = models.ForeignKey(Timesheet, on_delete=models.CASCADE, related_name='weeks')
     start_date = models.DateField()
     end_date = models.DateField()
+    total_hours = models.DecimalField(max_digits=5, decimal_places=2, default=0)
 
     def __str__(self):
-        return f"Week {self.start_date} - {self.end_date}"
+        return f"Week: {self.start_date} → {self.end_date}"
 
 
 class Day(models.Model):
@@ -101,12 +102,12 @@ class TimesheetEntry(models.Model):
     week = models.ForeignKey(Week, on_delete=models.CASCADE, related_name='entries')
     task = models.ForeignKey(Task, on_delete=models.CASCADE)
     type = models.ForeignKey(Type, on_delete=models.CASCADE)
-    day_index = models.IntegerField()  # 0 to 6 for Mon–Sun
+    day_index = models.IntegerField()  # 0–6 for Mon–Sun
     hours = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='entries', null=True, blank=True)  # ✅ Added to prevent AnonymousUser issues
 
     def __str__(self):
-        return f"{self.task.name} - {self.type.name} - Day {self.day_index + 1}"
-
+        return f"{self.user.username} - {self.task.name} ({self.type.name}) - Day {self.day_index + 1}"
 
 
 

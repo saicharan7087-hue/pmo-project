@@ -18,7 +18,7 @@ urlpatterns = [
     path('tasks/', task_view, name='task_view'),
     path('types/<int:task_id>/', get_types_by_task, name='get_types_by_task'),
     path('timesheet/save/', save_timesheet, name='save_timesheet'),
-    path('timesheet/<str:month>/', get_timesheet, name='get_monthly_timesheet'),
+    path('timesheet/get/', get_timesheet, name='get_monthly_timesheet'),
 ]
 
 

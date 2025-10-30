@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Employee, MainClient, EndClient, MigrantType,Task,Type,Timesheet
+from .models import Employee, MainClient, EndClient, MigrantType,Task,Type,Timesheet,TimesheetEntry,Week
 
 
 class EmployeeSerializer(serializers.ModelSerializer):
@@ -139,10 +139,30 @@ class TypeSerializer(serializers.ModelSerializer):
 
 
 
+class TimesheetEntrySerializer(serializers.ModelSerializer):
+    task_name = serializers.CharField(source='task.name', read_only=True)
+    type_name = serializers.CharField(source='type.name', read_only=True)
+
+    class Meta:
+        model = TimesheetEntry
+        fields = ['id', 'task', 'task_name', 'type', 'type_name', 'day_index', 'hours']
+
+
+class WeekSerializer(serializers.ModelSerializer):
+    timesheet_entries = TimesheetEntrySerializer(source='timesheetentry_set', many=True, read_only=True)
+
+    class Meta:
+        model = Week
+        fields = ['id', 'start_date', 'end_date', 'timesheet_entries']
+
+
 class TimesheetSerializer(serializers.ModelSerializer):
+    user_name = serializers.CharField(source='user.username', read_only=True)
+    weeks = WeekSerializer(many=True, read_only=True)
+
     class Meta:
         model = Timesheet
-        fields = '__all__'
+        fields = ['id', 'user', 'user_name', 'month', 'weeks']
 
 
 class MigrantTypeSerializer(serializers.ModelSerializer):
