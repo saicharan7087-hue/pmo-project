@@ -1,12 +1,15 @@
 from django.contrib.auth import authenticate
-from rest_framework.decorators import api_view, parser_classes
+from rest_framework.decorators import api_view, parser_classes,permission_classes
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.permissions import AllowAny
 from django.db.models import Q
+from datetime import datetime, timedelta
 import pandas as pd
-from .models import Employee, MainClient, EndClient, MigrantType,Task,Type
-from .serializers import EmployeeSerializer, MainClientSerializer, EndClientSerializer,TaskSerializer,MigrantTypeSerializer,TypeSerializer
+from .models import Employee, MainClient, EndClient, MigrantType,Task,Type,User, Timesheet,Week,Day
+from .serializers import EmployeeSerializer, MainClientSerializer, EndClientSerializer,TaskSerializer,MigrantTypeSerializer,TypeSerializer,TimesheetSerializer
 
 
 # ---------------- Employee Login ----------------
@@ -240,6 +243,82 @@ def get_types_by_task(request, task_id):
     types = Type.objects.filter(task_id=task_id)
     serializer = TypeSerializer(types, many=True)
     return Response(serializer.data)
+
+
+
+@api_view(['POST'])
+
+def save_timesheet(request):
+    try:
+        user = request.user
+        data = request.data
+        month = data.get("month")
+
+        # Delete old timesheet if exists for same month (optional)
+        Timesheet.objects.filter(user=user, month=month).delete()
+
+        timesheet = Timesheet.objects.create(user=user, month=month)
+
+        for week_data in data.get("weeks", []):
+            week = Week.objects.create(
+                timesheet=timesheet,
+                start_date=week_data["startDate"],
+                end_date=week_data["endDate"]
+            )
+
+            for task_data in week_data.get("tasks", []):
+                Day.objects.create(
+                    week=week,
+                    task_id=task_data["task"],
+                    type_id=task_data["type"],
+                    hours=task_data["hours"]
+                )
+
+        return Response({"message": "Timesheet saved successfully!"}, status=status.HTTP_201_CREATED)
+
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+
+@api_view(['GET'])
+
+def get_timesheet(request, month):
+    try:
+        user = request.user
+        timesheet = Timesheet.objects.filter(user=user, month=month).first()
+
+        if not timesheet:
+            return Response({"error": "No data found for this month."}, status=status.HTTP_404_NOT_FOUND)
+
+        response_data = {
+            "user": user.username,
+            "month": timesheet.month,
+            "weeks": []
+        }
+
+        for week in timesheet.weeks.all():
+            week_data = {
+                "startDate": week.start_date,
+                "endDate": week.end_date,
+                "tasks": []
+            }
+
+            for task in week.tasks.all():
+                week_data["tasks"].append({
+                    "task": task.task.id,
+                    "task_name": task.task.name,
+                    "type": task.type.id,
+                    "type_name": task.type.name,
+                    "hours": task.hours
+                })
+
+            response_data["weeks"].append(week_data)
+
+        return Response(response_data, status=status.HTTP_200_OK)
+
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 
 @api_view(['GET'])

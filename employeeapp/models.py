@@ -1,4 +1,5 @@
 from django.db import models
+from django.contrib.auth.models import User
 
 class MainClient(models.Model):
     name = models.CharField(max_length=100, unique=True)
@@ -63,3 +64,49 @@ class Type(models.Model):
 
     def __str__(self):
         return self.name
+
+
+
+
+class Timesheet(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    month = models.CharField(max_length=20)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.user.username} - {self.month}"
+
+
+class Week(models.Model):
+    timesheet = models.ForeignKey(Timesheet, on_delete=models.CASCADE, related_name='weeks')
+    start_date = models.DateField()
+    end_date = models.DateField()
+
+    def __str__(self):
+        return f"Week {self.start_date} - {self.end_date}"
+
+
+class Day(models.Model):
+    week = models.ForeignKey(Week, on_delete=models.CASCADE, related_name='days')
+    date = models.DateField()
+    day_name = models.CharField(max_length=10)
+    is_weekend = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"{self.date} ({self.day_name})"
+
+
+class TimesheetEntry(models.Model):
+    timesheet = models.ForeignKey(Timesheet, on_delete=models.CASCADE, related_name='entries')
+    week = models.ForeignKey(Week, on_delete=models.CASCADE, related_name='entries')
+    task = models.ForeignKey(Task, on_delete=models.CASCADE)
+    type = models.ForeignKey(Type, on_delete=models.CASCADE)
+    day_index = models.IntegerField()  # 0 to 6 for Mon–Sun
+    hours = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+
+    def __str__(self):
+        return f"{self.task.name} - {self.type.name} - Day {self.day_index + 1}"
+
+
+
+

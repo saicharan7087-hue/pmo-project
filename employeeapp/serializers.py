@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Employee, MainClient, EndClient, MigrantType,Task,Type
+from .models import Employee, MainClient, EndClient, MigrantType,Task,Type,Timesheet
 
 
 class EmployeeSerializer(serializers.ModelSerializer):
@@ -132,6 +132,17 @@ class TypeSerializer(serializers.ModelSerializer):
     class Meta:
         model = Type
         fields = ['id', 'name']
+
+
+
+
+
+
+
+class TimesheetSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Timesheet
+        fields = '__all__'
 
 
 class MigrantTypeSerializer(serializers.ModelSerializer):
