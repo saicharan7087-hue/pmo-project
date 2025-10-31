@@ -15,16 +15,31 @@ from .models import Employee, MainClient, EndClient, MigrantType,Task,Type,User,
 from .serializers import EmployeeSerializer, MainClientSerializer, EndClientSerializer,TaskSerializer,MigrantTypeSerializer,TypeSerializer,TimesheetSerializer
 
 
-# ---------------- Employee Login ----------------
 @api_view(['POST'])
+@permission_classes([AllowAny])
 def login_view(request):
     username = request.data.get('username')
     password = request.data.get('password')
 
+    # Authenticate user
     user = authenticate(username=username, password=password)
+
     if user:
-        return Response({"message": "Login successful"})
-    return Response({"message": "Invalid credentials"}, status=400)
+        # ✅ Return clean JSON structure
+        return Response({
+            "message": "Login successful",
+            "user": {
+                "id": user.id,
+                "username": user.username,
+
+            }
+        }, status=status.HTTP_200_OK)
+
+    #  Invalid login
+    return Response({
+        "message": "Invalid credentials"
+    }, status=status.HTTP_400_BAD_REQUEST)
+
 
 
 @api_view(['POST'])
