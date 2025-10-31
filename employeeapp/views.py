@@ -285,7 +285,7 @@ def save_timesheet(request):
                 hours_data = task_data.get("hours", 0)
                 description = task_data.get("description", "")
 
-                # 🧩 Fetch existing Task and Type by ID
+                #  Fetch existing Task and Type by ID
                 from .models import Task, Type
 
                 task_obj = Task.objects.filter(id=task_id).first()
@@ -343,9 +343,9 @@ def get_timesheet(request):
         for entry in entries:
             tasks.append({
                 "task_id": entry.task.id if entry.task else None,
-                "task": entry.task.name if entry.task else None,   # ✅ Name instead of ID
+                "task": entry.task.name if entry.task else None,   #  Name instead of ID
                 "type_id": entry.type.id if entry.type else None,
-                "type": entry.type.name if entry.type else None,   # ✅ Name instead of ID
+                "type": entry.type.name if entry.type else None,   # Name instead of ID
                 "hours": float(entry.hours or 0),
 
             })
