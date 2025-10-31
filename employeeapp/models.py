@@ -98,16 +98,17 @@ class Day(models.Model):
 
 
 class TimesheetEntry(models.Model):
-    timesheet = models.ForeignKey(Timesheet, on_delete=models.CASCADE, related_name='entries')
-    week = models.ForeignKey(Week, on_delete=models.CASCADE, related_name='entries')
-    task = models.ForeignKey(Task, on_delete=models.CASCADE)
-    type = models.ForeignKey(Type, on_delete=models.CASCADE)
+
     day_index = models.IntegerField(default=0) # 0–6 for Mon–Sun
     hours = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    timesheet = models.ForeignKey(Timesheet, on_delete=models.CASCADE)
+    week = models.ForeignKey(Week, on_delete=models.CASCADE)
+    task_name = models.CharField(max_length=255, default="", blank=True)
+    type_name = models.CharField(max_length=255, default="", blank=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='entries', null=True, blank=True)  # ✅ Added to prevent AnonymousUser issues
 
     def __str__(self):
-        return f"{self.user.username} - {self.task.name} ({self.type.name}) - Day {self.day_index + 1}"
+        return f"{self.task_name} - {self.type_name} ({self.hours} hrs)"
 
 
 

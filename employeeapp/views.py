@@ -303,7 +303,7 @@ from .models import Timesheet, Week, Task, Type, TimesheetEntry
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
-def save_timesheet(request):
+def save_timesheet(request , user_id ):
     try:
         data = request.data
 
@@ -314,15 +314,17 @@ def save_timesheet(request):
         if not user_id or not month:
             return Response({"error": "user_id and month are required"}, status=status.HTTP_400_BAD_REQUEST)
 
+        # ✅ Get user
         try:
             user = User.objects.get(id=user_id)
         except User.DoesNotExist:
             return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
 
-        # Create or update timesheet
+        # ✅ Create or update timesheet
         timesheet, _ = Timesheet.objects.get_or_create(user=user, month=month)
-        timesheet.weeks.all().delete()  # clear previous data
+        timesheet.weeks.all().delete()  # clear previous weeks to avoid duplicates
 
+        # ✅ Iterate through each week
         for week_data in weeks:
             start_date = week_data.get("startDate")
             end_date = week_data.get("endDate")
@@ -334,28 +336,37 @@ def save_timesheet(request):
                 end_date=end_date,
             )
 
+            # ✅ Iterate through each task in the week
             for task_data in tasks:
-                task_name = task_data.get("task")
-                type_name = task_data.get("type")
+                task_id = task_data.get("task")
+                type_id = task_data.get("type")
                 hours_data = task_data.get("hours", [])
 
-                # Get or create Task and Type
-                task_obj, _ = Task.objects.get_or_create(name=task_name)
-                type_obj, _ = Type.objects.get_or_create(name=type_name, task=task_obj)
+                # ✅ Map IDs → names
+                task_obj = Task.objects.filter(id=task_id).first()
+                type_obj = Type.objects.filter(id=type_id).first()
 
-                # Calculate total hours
+                if not task_obj:
+                    return Response({"error": f"Task with ID {task_id} not found"}, status=status.HTTP_400_BAD_REQUEST)
+                if not type_obj:
+                    return Response({"error": f"Type with ID {type_id} not found"}, status=status.HTTP_400_BAD_REQUEST)
+
+                task_name = task_obj.name
+                type_name = type_obj.name
+
+                # ✅ Calculate total hours
                 total_hours = sum(float(h or 0) for h in hours_data)
 
-                # Create TimesheetEntry
+                # ✅ Create TimesheetEntry storing names instead of IDs
                 TimesheetEntry.objects.create(
                     timesheet=timesheet,
                     week=week,
-                    task=task_obj,
-                    type=type_obj,
+                    task_name=task_name,  # store name instead of FK
+                    type_name=type_name,  # store name instead of FK
                     hours=total_hours
                 )
 
-        return Response({"message": "Timesheet saved successfully"}, status=status.HTTP_201_CREATED)
+        return Response({"message": "✅ Timesheet saved successfully"}, status=status.HTTP_201_CREATED)
 
     except Exception as e:
         return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
