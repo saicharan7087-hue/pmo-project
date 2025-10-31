@@ -348,25 +348,30 @@ def save_timesheet(request,user_id):
             )
 
             for task_data in tasks:
-                task_name = task_data.get("task")
-                type_name = task_data.get("type")
+                task_id = task_data.get("task")
+                type_id = task_data.get("type")
                 hours_data = task_data.get("hours", [])
 
-                if not task_name:
-                    return Response({"error": "Task name cannot be empty"}, status=status.HTTP_400_BAD_REQUEST)
-                if not type_name:
-                    return Response({"error": "Type name cannot be empty"}, status=status.HTTP_400_BAD_REQUEST)
+                # ✅ Validate task and type IDs
+                if not task_id or not type_id:
+                    return Response(
+                        {"error": "task_id and type_id are required for each task"},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
 
-                # ✅ Get or create Task & Type
-                task_obj, _ = Task.objects.get_or_create(name=task_name)
-                type_obj, _ = Type.objects.get_or_create(name=type_name, task=task_obj)
+                try:
+                    task_obj = Task.objects.get(id=task_id)
+                except Task.DoesNotExist:
+                    return Response({"error": f"Task with id {task_id} not found"}, status=status.HTTP_404_NOT_FOUND)
 
-                # ✅ Calculate total hours (handle both list or single value)
-                if isinstance(hours_data, list):
-                    total_hours = sum(float(h or 0) for h in hours_data)
-                else:
-                    total_hours = float(hours_data or 0)
+                try:
+                    type_obj = Type.objects.get(id=type_id, task=task_obj)
+                except Type.DoesNotExist:
+                    return Response({"error": f"Type with id {type_id} not found for task {task_id}"},
+                                    status=status.HTTP_404_NOT_FOUND)
 
+                # ✅ Calculate total hours
+                total_hours = sum(float(h or 0) for h in hours_data)
                 # ✅ Create TimesheetEntry safely
                 TimesheetEntry.objects.create(
                     timesheet=timesheet,
