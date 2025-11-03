@@ -25,7 +25,7 @@ def login_view(request):
     user = authenticate(username=username, password=password)
 
     if user:
-        # ✅ Return clean JSON structure
+        # Return clean JSON structure
         return Response({
             "message": "Login successful",
             "user": {
@@ -314,17 +314,17 @@ def save_timesheet(request , user_id ):
         if not user_id or not month:
             return Response({"error": "user_id and month are required"}, status=status.HTTP_400_BAD_REQUEST)
 
-        # ✅ Get user
+        #  Get user
         try:
             user = User.objects.get(id=user_id)
         except User.DoesNotExist:
             return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
 
-        # ✅ Create or update timesheet
+        #  Create or update timesheet
         timesheet, _ = Timesheet.objects.get_or_create(user=user, month=month)
         timesheet.weeks.all().delete()  # clear previous weeks to avoid duplicates
 
-        # ✅ Iterate through each week
+        #  Iterate through each week
         for week_data in weeks:
             start_date = week_data.get("startDate")
             end_date = week_data.get("endDate")
@@ -336,13 +336,13 @@ def save_timesheet(request , user_id ):
                 end_date=end_date,
             )
 
-            # ✅ Iterate through each task in the week
+            # Iterate through each task in the week
             for task_data in tasks:
                 task_id = task_data.get("task")
                 type_id = task_data.get("type")
                 hours_data = task_data.get("hours", [])
 
-                # ✅ Map IDs → names
+                # Map IDs → names
                 task_obj = Task.objects.filter(id=task_id).first()
                 type_obj = Type.objects.filter(id=type_id).first()
 
@@ -354,10 +354,10 @@ def save_timesheet(request , user_id ):
                 task_name = task_obj.name
                 type_name = type_obj.name
 
-                # ✅ Calculate total hours
+                #  Calculate total hours
                 total_hours = sum(float(h or 0) for h in hours_data)
 
-                # ✅ Create TimesheetEntry storing names instead of IDs
+                #  Create TimesheetEntry storing names instead of IDs
                 TimesheetEntry.objects.create(
                     timesheet=timesheet,
                     week=week,
@@ -366,7 +366,7 @@ def save_timesheet(request , user_id ):
                     hours=total_hours
                 )
 
-        return Response({"message": "✅ Timesheet saved successfully"}, status=status.HTTP_201_CREATED)
+        return Response({"message": " Timesheet saved successfully"}, status=status.HTTP_201_CREATED)
 
     except Exception as e:
         return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

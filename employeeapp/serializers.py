@@ -145,7 +145,7 @@ class TimesheetEntrySerializer(serializers.ModelSerializer):
 
     class Meta:
         model = TimesheetEntry
-        fields = ['id', 'task', 'task_name', 'type', 'type_name', 'day_index', 'hours']
+        fields = ['id', 'task', 'task', 'type', 'type_name', 'day_index', 'hours']
 
 
 class WeekSerializer(serializers.ModelSerializer):
