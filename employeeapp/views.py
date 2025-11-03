@@ -300,6 +300,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from django.contrib.auth.models import User
 from .models import Timesheet, Week, Task, Type, TimesheetEntry
+import json
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
@@ -363,7 +364,8 @@ def save_timesheet(request , user_id ):
                     week=week,
                     task_name=task_name,  # store name instead of FK
                     type_name=type_name,  # store name instead of FK
-                    hours=total_hours
+                    hours_json=json.dumps(hours_data),  #  for day-wise
+                    total_hours=total_hours
                 )
 
         return Response({"message": " Timesheet saved successfully"}, status=status.HTTP_201_CREATED)
@@ -372,13 +374,14 @@ def save_timesheet(request , user_id ):
         return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework import status
 from django.contrib.auth.models import User
-from .models import Timesheet, Week, TimesheetEntry
+from .models import Timesheet, Week, TimesheetEntry, Task, Type
+import json
+
 
 @api_view(['GET'])
 @permission_classes([AllowAny])
@@ -390,42 +393,43 @@ def get_timesheet(request, user_id, month):
         except User.DoesNotExist:
             return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
 
-        # Fetch timesheet for that user and month
+        #  Get the user's timesheet for the month
         timesheet = Timesheet.objects.filter(user=user, month=month).first()
         if not timesheet:
             return Response({"message": "No timesheet found for this month"}, status=status.HTTP_404_NOT_FOUND)
 
-        #  Build the response
-        response_data = {
-            "user_id": user.id,
-            "month": timesheet.month,
-            "weeks": []
-        }
+        response_data = []
 
-        #  Get all related weeks
-        weeks = Week.objects.filter(timesheet=timesheet)
-
-        for week in weeks:
+        #  Iterate through all weeks of this timesheet
+        for week in timesheet.weeks.all():
             week_data = {
-                "startDate": week.start_date,
-                "endDate": week.end_date,
-                "tasks": []
+                "startDate": str(week.start_date),
+                "endDate": str(week.end_date),
+                "taskRows": []
             }
 
-            #  Get all entries for this week
             entries = TimesheetEntry.objects.filter(week=week)
 
+            #  Iterate through each TimesheetEntry (task + type)
             for entry in entries:
-                task_data = {
-                    "task": entry.task_name,
-                    "type": entry.type_name,
-                    "hours": [entry.hours]  # or adapt if you store day-wise hours later
-                }
-                week_data["tasks"].append(task_data)
+                # Reverse lookup: find task_id and type_id from name
+                task_obj = Task.objects.filter(name=entry.task_name).first()
+                type_obj = Type.objects.filter(name=entry.type_name).first()
 
-            response_data["weeks"].append(week_data)
+                week_data["taskRows"].append({
+                    "task_id": task_obj.id if task_obj else None,
+                    "type_id": type_obj.id if type_obj else None,
+                    "hours": json.loads(entry.hours_json) if entry.hours_json else [],
+                    "total_hours": entry.total_hours,
+                })
 
-        return Response(response_data, status=status.HTTP_200_OK)
+            response_data.append(week_data)
+
+        return Response({
+            "user_id": user_id,
+            "month": month,
+            "weeks": response_data
+        }, status=status.HTTP_200_OK)
 
     except Exception as e:
         return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

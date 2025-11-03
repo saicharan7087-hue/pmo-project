@@ -100,7 +100,8 @@ class Day(models.Model):
 class TimesheetEntry(models.Model):
 
     day_index = models.IntegerField(default=0) # 0–6 for Mon–Sun
-    hours = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    hours_json = models.TextField(default='[]')  # ✅ for day-wise hours
+    total_hours = models.FloatField(default=0)
     timesheet = models.ForeignKey(Timesheet, on_delete=models.CASCADE)
     week = models.ForeignKey(Week, on_delete=models.CASCADE)
     task_name = models.CharField(max_length=255, default="", blank=True)
