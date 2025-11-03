@@ -371,3 +371,63 @@ def save_timesheet(request , user_id ):
     except Exception as e:
         return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+
+
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import AllowAny
+from rest_framework.response import Response
+from rest_framework import status
+from django.contrib.auth.models import User
+from .models import Timesheet, Week, TimesheetEntry
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def get_timesheet(request, user_id, month):
+    try:
+        #  Check if user exists
+        try:
+            user = User.objects.get(id=user_id)
+        except User.DoesNotExist:
+            return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        # Fetch timesheet for that user and month
+        timesheet = Timesheet.objects.filter(user=user, month=month).first()
+        if not timesheet:
+            return Response({"message": "No timesheet found for this month"}, status=status.HTTP_404_NOT_FOUND)
+
+        #  Build the response
+        response_data = {
+            "user_id": user.id,
+            "month": timesheet.month,
+            "weeks": []
+        }
+
+        #  Get all related weeks
+        weeks = Week.objects.filter(timesheet=timesheet)
+
+        for week in weeks:
+            week_data = {
+                "startDate": week.start_date,
+                "endDate": week.end_date,
+                "tasks": []
+            }
+
+            #  Get all entries for this week
+            entries = TimesheetEntry.objects.filter(week=week)
+
+            for entry in entries:
+                task_data = {
+                    "task": entry.task_name,
+                    "type": entry.type_name,
+                    "hours": [entry.hours]  # or adapt if you store day-wise hours later
+                }
+                week_data["tasks"].append(task_data)
+
+            response_data["weeks"].append(week_data)
+
+        return Response(response_data, status=status.HTTP_200_OK)
+
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
