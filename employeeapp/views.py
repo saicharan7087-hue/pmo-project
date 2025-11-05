@@ -329,7 +329,7 @@ def save_timesheet(request , user_id ):
         for week_data in weeks:
             start_date = week_data.get("startDate")
             end_date = week_data.get("endDate")
-            tasks = week_data.get("tasks", [])
+            task_rows = week_data.get("taskRows", [])
 
             week = Week.objects.create(
                 timesheet=timesheet,
@@ -338,9 +338,9 @@ def save_timesheet(request , user_id ):
             )
 
             # Iterate through each task in the week
-            for task_data in tasks:
-                task_id = task_data.get("task")
-                type_id = task_data.get("type")
+            for task_data in task_rows:
+                task_id = task_data.get("task_id")
+                type_id = task_data.get("type_id")
                 hours_data = task_data.get("hours", [])
 
                 # Map IDs → names
@@ -362,11 +362,14 @@ def save_timesheet(request , user_id ):
                 TimesheetEntry.objects.create(
                     timesheet=timesheet,
                     week=week,
-                    task_name=task_name,  # store name instead of FK
-                    type_name=type_name,  # store name instead of FK
-                    hours_json=json.dumps(hours_data),  #  for day-wise
+                    task=task_obj,
+                    type=type_obj,
+                    task_name=task_obj.name,
+                    type_name=type_obj.name,
+                    hours_json=json.dumps(hours_data),
                     total_hours=total_hours
                 )
+
 
         return Response({"message": " Timesheet saved successfully"}, status=status.HTTP_201_CREATED)
 
@@ -387,20 +390,18 @@ import json
 @permission_classes([AllowAny])
 def get_timesheet(request, user_id, month):
     try:
-        #  Check if user exists
-        try:
-            user = User.objects.get(id=user_id)
-        except User.DoesNotExist:
-            return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
-
-        #  Get the user's timesheet for the month
+        user = User.objects.get(id=user_id)
         timesheet = Timesheet.objects.filter(user=user, month=month).first()
+
         if not timesheet:
-            return Response({"message": "No timesheet found for this month"}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"message": "No timesheet found for this month"}, status=404)
 
-        response_data = []
+        result = {
+            "user_id": user_id,
+            "month": month,
+            "weeks": []
+        }
 
-        #  Iterate through all weeks of this timesheet
         for week in timesheet.weeks.all():
             week_data = {
                 "startDate": str(week.start_date),
@@ -410,28 +411,17 @@ def get_timesheet(request, user_id, month):
 
             entries = TimesheetEntry.objects.filter(week=week)
 
-            #  Iterate through each TimesheetEntry (task + type)
             for entry in entries:
-                # Reverse lookup: find task_id and type_id from name
-                task_obj = Task.objects.filter(name=entry.task_name).first()
-                type_obj = Type.objects.filter(name=entry.type_name).first()
-
                 week_data["taskRows"].append({
-                    "task_id": task_obj.id if task_obj else None,
-                    "type_id": type_obj.id if type_obj else None,
-                    "hours": json.loads(entry.hours_json) if entry.hours_json else [],
-                    "total_hours": entry.total_hours,
+                    "task_id": entry.task_id,
+                    "type_id": entry.type_id,
+                    "hours": json.loads(entry.hours_json),
+                    "total_hours": entry.total_hours
                 })
 
-            response_data.append(week_data)
+            result["weeks"].append(week_data)
 
-        return Response({
-            "user_id": user_id,
-            "month": month,
-            "weeks": response_data
-        }, status=status.HTTP_200_OK)
+        return Response(result, status=200)
 
     except Exception as e:
-        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-
+        return Response({"error": str(e)}, status=500)

@@ -98,15 +98,21 @@ class Day(models.Model):
 
 
 class TimesheetEntry(models.Model):
-
-    day_index = models.IntegerField(default=0) # 0–6 for Mon–Sun
-    hours_json = models.TextField(default='[]')  # ✅ for day-wise hours
+    day_index = models.IntegerField(default=0)
+    hours_json = models.TextField(default='[]')
     total_hours = models.FloatField(default=0)
+
     timesheet = models.ForeignKey(Timesheet, on_delete=models.CASCADE)
     week = models.ForeignKey(Week, on_delete=models.CASCADE)
+
+    task = models.ForeignKey(Task, on_delete=models.CASCADE, null=True, blank=True)
+    type = models.ForeignKey(Type, on_delete=models.CASCADE, null=True, blank=True)
+
+    # Optional: store names also (good for history / export)
     task_name = models.CharField(max_length=255, default="", blank=True)
     type_name = models.CharField(max_length=255, default="", blank=True)
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='entries', null=True, blank=True)  # ✅ Added to prevent AnonymousUser issues
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='entries', null=True, blank=True)
 
     def __str__(self):
         return f"{self.task_name} - {self.type_name} ({self.hours} hrs)"
